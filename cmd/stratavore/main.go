@@ -12,6 +12,7 @@ import (
 	"github.com/meridian/stratavore/pkg/api"
 	"github.com/meridian/stratavore/pkg/client"
 	"github.com/meridian/stratavore/pkg/config"
+	"github.com/meridian/stratavore/pkg/types"
 	"github.com/spf13/cobra"
 )
 
@@ -22,7 +23,7 @@ func getAPIClient() *client.Client {
 }
 
 var (
-	Version   = "dev"
+	Version   = "1.2.0"
 	BuildTime = "unknown"
 	Commit    = "unknown"
 )
@@ -38,12 +39,12 @@ func init() {
 	// Add flags
 	newCmd.Flags().StringP("path", "p", "", "Project path (default: current directory)")
 	newCmd.Flags().StringP("description", "d", "", "Project description")
-
+	
 	launchCmd.Flags().StringSliceP("flag", "f", nil, "Claude Code flags")
 	launchCmd.Flags().StringSliceP("capability", "c", nil, "Capabilities to enable")
-
+	
 	killCmd.Flags().BoolP("force", "f", false, "Force kill (SIGKILL)")
-
+	
 	// Register commands
 	rootCmd.AddCommand(newCmd)
 	rootCmd.AddCommand(launchCmd)
@@ -71,22 +72,6 @@ providing global state visibility, session resumption, and resource management.`
 	Run:     rootHandler,
 }
 
-func init() {
-	// Global flags
-	rootCmd.PersistentFlags().StringVar(&configFile, "config", "", "config file path")
-	rootCmd.PersistentFlags().StringVar(&flagsVar, "flags", "", "Claude Code flags")
-	rootCmd.PersistentFlags().BoolVar(&godMode, "god", false, "God mode (full access)")
-	rootCmd.PersistentFlags().StringVar(&preset, "preset", "", "Use preset configuration")
-
-	// Add subcommands
-	rootCmd.AddCommand(statusCmd)
-	rootCmd.AddCommand(runnersCmd)
-	rootCmd.AddCommand(projectsCmd)
-	rootCmd.AddCommand(newCmd)
-	rootCmd.AddCommand(attachCmd)
-	rootCmd.AddCommand(killCmd)
-	rootCmd.AddCommand(daemonCmd)
-}
 
 func rootHandler(cmd *cobra.Command, args []string) {
 	if len(args) == 0 {
@@ -95,16 +80,16 @@ func rootHandler(cmd *cobra.Command, args []string) {
 		fmt.Println("Usage: stratavore <project-name>")
 		os.Exit(1)
 	}
-
+	
 	projectName := args[0]
-
+	
 	// Load config
 	cfg, err := config.LoadConfig()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to load config: %v\n", err)
 		os.Exit(1)
 	}
-
+	
 	// Connect to database
 	ctx := context.Background()
 	db, err := storage.NewPostgresClient(
@@ -117,14 +102,14 @@ func rootHandler(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 	defer db.Close()
-
+	
 	// Check for existing runners
 	runners, err := db.GetActiveRunners(ctx, projectName)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error checking runners: %v\n", err)
 		os.Exit(1)
 	}
-
+	
 	if len(runners) == 0 {
 		// Launch new runner
 		fmt.Printf("Launching new runner for project: %s\n", projectName)
@@ -151,7 +136,7 @@ func rootHandler(cmd *cobra.Command, args []string) {
 func launchNewRunner(ctx context.Context, db *storage.PostgresClient, projectName string, cfg *config.Config) {
 	// This would typically communicate with the daemon via gRPC
 	// For now, just show what would happen
-
+	
 	fmt.Println("Would launch runner with daemon...")
 	fmt.Printf("  Project: %s\n", projectName)
 	if godMode {
@@ -313,6 +298,42 @@ var killCmd = &cobra.Command{
 }
 
 var runnersCmd = &cobra.Command{
+	Use:   "status",
+	Short: "Show global dashboard",
+	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Println("=== Stratavore Status ===")
+		fmt.Println("Active Runners: 0")
+		fmt.Println("Active Projects: 0")
+		fmt.Println("Total Sessions: 0")
+		fmt.Println("Tokens Used: 0")
+		fmt.Println("\nDaemon: Not running (TODO: check via gRPC)")
+	},
+}
+
+var runnersCmd = &cobra.Command{
+	Use:   "runners",
+	Short: "List all active runners",
+	Run: func(cmd *cobra.Command, args []string) {
+		cfg, _ := config.LoadConfig()
+		ctx := context.Background()
+		db, err := storage.NewPostgresClient(
+			ctx,
+			cfg.Database.PostgreSQL.GetConnectionString(),
+			5, 1,
+		)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Database error: %v\n", err)
+			return
+		}
+		defer db.Close()
+		
+		// Get all active runners (would need to add this query)
+		fmt.Println("=== Active Runners ===")
+		fmt.Println("(Query implementation TODO)")
+	},
+}
+
+var runnersCmd = &cobra.Command{
 	Use:   "runners [project]",
 	Short: "List active runners",
 	Run: func(cmd *cobra.Command, args []string) {
@@ -347,7 +368,7 @@ var runnersCmd = &cobra.Command{
 		for _, r := range resp.Runners {
 			startTime, _ := api.ParseTime(r.StartedAt)
 			uptime := formatDuration(time.Since(startTime))
-
+			
 			fmt.Printf("%-8s  %-20s %-9s %-10s %5.1f  %7d\n",
 				r.ID[:8],
 				truncate(r.ProjectName, 20),
@@ -359,6 +380,74 @@ var runnersCmd = &cobra.Command{
 	},
 }
 
+var projectsCmd = &cobra.Command{
+	Use:   "projects",
+	Short: "List all projects",
+	Run: func(cmd *cobra.Command, args []string) {
+		cfg, _ := config.LoadConfig()
+		ctx := context.Background()
+		db, err := storage.NewPostgresClient(
+			ctx,
+			cfg.Database.PostgreSQL.GetConnectionString(),
+			5, 1,
+		)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Database error: %v\n", err)
+			return
+		}
+		defer db.Close()
+		
+		projects, err := db.ListProjects(ctx, "")
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error listing projects: %v\n", err)
+			return
+		}
+		
+		fmt.Println("=== Projects ===")
+		for _, p := range projects {
+			fmt.Printf("%s (%s) - %d active runners\n", p.Name, p.Status, p.ActiveRunners)
+		}
+	},
+}
+
+var newCmd = &cobra.Command{
+	Use:   "new <project-name>",
+	Short: "Create a new project",
+	Args:  cobra.ExactArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		projectName := args[0]
+		
+		cfg, _ := config.LoadConfig()
+		ctx := context.Background()
+		db, err := storage.NewPostgresClient(
+			ctx,
+			cfg.Database.PostgreSQL.GetConnectionString(),
+			5, 1,
+		)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Database error: %v\n", err)
+			return
+		}
+		defer db.Close()
+		
+		// Get current directory
+		pwd, _ := os.Getwd()
+		
+		project := &types.Project{
+			Name:   projectName,
+			Path:   pwd,
+			Status: types.ProjectIdle,
+		}
+		
+		if err := db.CreateProject(ctx, project); err != nil {
+			fmt.Fprintf(os.Stderr, "Error creating project: %v\n", err)
+			return
+		}
+		
+		fmt.Printf("Created project: %s at %s\n", projectName, pwd)
+	},
+}
+
 var attachCmd = &cobra.Command{
 	Use:   "attach <runner-id>",
 	Short: "Attach to running instance",
@@ -367,6 +456,17 @@ var attachCmd = &cobra.Command{
 		runnerID := args[0]
 		fmt.Printf("Attaching to runner: %s\n", runnerID)
 		fmt.Println("(Attach implementation TODO - requires PTY handling)")
+	},
+}
+
+var killCmd = &cobra.Command{
+	Use:   "kill <runner-id>",
+	Short: "Stop a runner",
+	Args:  cobra.ExactArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		runnerID := args[0]
+		fmt.Printf("Stopping runner: %s\n", runnerID)
+		fmt.Println("(Would communicate with daemon via gRPC)")
 	},
 }
 
@@ -468,11 +568,11 @@ var watchCmd = &cobra.Command{
 		defer db.Close()
 
 		monitor := ui.NewLiveMonitor(db, 2*time.Second)
-
+		
 		// Setup signal handler
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
-
+		
 		sigCh := make(chan os.Signal, 1)
 		signal.Notify(sigCh, os.Interrupt)
 		go func() {

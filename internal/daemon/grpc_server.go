@@ -2,6 +2,7 @@ package daemon
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/meridian/stratavore/internal/storage"
@@ -15,10 +16,6 @@ type GRPCServer struct {
 	runnerManager *RunnerManager
 	storage       *storage.PostgresClient
 	logger        *zap.Logger
-}
-
-func (s *GRPCServer) Start() any {
-	panic("unimplemented")
 }
 
 // NewGRPCServer creates a new gRPC server
@@ -314,3 +311,4 @@ func convertProjectToAPI(p *types.Project) *api.Project {
 
 	return apiProject
 }
+

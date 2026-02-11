@@ -37,28 +37,28 @@ func run() error {
 	if err != nil {
 		return fmt.Errorf("load config: %w", err)
 	}
-
+	
 	// Setup logger
 	logger, err := setupLogger(cfg.Observability.LogLevel, cfg.Observability.LogFormat)
 	if err != nil {
 		return fmt.Errorf("setup logger: %w", err)
 	}
 	defer logger.Sync()
-
+	
 	logger.Info("starting stratavore daemon",
 		zap.String("version", Version),
 		zap.String("build_time", BuildTime),
 		zap.String("commit", Commit))
-
+	
 	// Create context with cancellation
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-
+	
 	// Connect to PostgreSQL
 	logger.Info("connecting to postgresql",
 		zap.String("host", cfg.Database.PostgreSQL.Host),
 		zap.Int("port", cfg.Database.PostgreSQL.Port))
-
+	
 	db, err := storage.NewPostgresClient(
 		ctx,
 		cfg.Database.PostgreSQL.GetConnectionString(),
@@ -69,14 +69,14 @@ func run() error {
 		return fmt.Errorf("connect to postgres: %w", err)
 	}
 	defer db.Close()
-
+	
 	logger.Info("connected to postgresql")
-
+	
 	// Connect to RabbitMQ
 	logger.Info("connecting to rabbitmq",
 		zap.String("host", cfg.Docker.RabbitMQ.Host),
 		zap.Int("port", cfg.Docker.RabbitMQ.Port))
-
+	
 	mqClient, err := messaging.NewClient(messaging.Config{
 		Host:              cfg.Docker.RabbitMQ.Host,
 		Port:              cfg.Docker.RabbitMQ.Port,
@@ -89,14 +89,14 @@ func run() error {
 		return fmt.Errorf("connect to rabbitmq: %w", err)
 	}
 	defer mqClient.Close()
-
+	
 	logger.Info("connected to rabbitmq")
-
+	
 	// Declare queues
 	if err := mqClient.DeclareQueue("stratavore.daemon.events", []string{"#"}); err != nil {
 		logger.Error("failed to declare queue", zap.Error(err))
 	}
-
+	
 	// Initialize Telegram notifications
 	var notifier *notifications.Client
 	if cfg.Docker.Telegram.Token != "" && cfg.Docker.Telegram.ChatID != "" {
@@ -104,20 +104,20 @@ func run() error {
 			Token:  cfg.Docker.Telegram.Token,
 			ChatID: cfg.Docker.Telegram.ChatID,
 		}, logger)
-
+		
 		hostname, _ := os.Hostname()
 		notifier.DaemonStarted(Version, hostname)
 		logger.Info("telegram notifications enabled")
 	} else {
 		logger.Warn("telegram notifications disabled (no token/chat_id configured)")
 	}
-
+	
 	// Create runner manager
 	runnerMgr := daemon.NewRunnerManager(db, mqClient, logger)
-
+	
 	// Create API handler
 	apiHandler := daemon.NewGRPCServer(runnerMgr, db, logger)
-
+	
 	// Start HTTP API server
 	httpServer := daemon.NewHTTPServer(cfg.Daemon.GRPCPort, apiHandler, logger)
 	go func() {
@@ -125,7 +125,7 @@ func run() error {
 			logger.Error("HTTP API server error", zap.Error(err))
 		}
 	}()
-
+	
 	// Start outbox publisher
 	outboxPublisher := messaging.NewOutboxPublisher(
 		db,
@@ -135,10 +135,10 @@ func run() error {
 		logger,
 	)
 	go outboxPublisher.Start(ctx)
-
+	
 	// Start reconciliation loop
 	go startReconciliationLoop(ctx, runnerMgr, cfg.Daemon.ReconcileInterval, logger)
-
+	
 	// Start metrics server
 	var metricsServer *observability.MetricsServer
 	if cfg.Docker.Prometheus.Enabled {
@@ -148,61 +148,60 @@ func run() error {
 				logger.Error("metrics server error", zap.Error(err))
 			}
 		}()
-
+		
 		// Update metrics periodically
 		go startMetricsUpdateLoop(ctx, metricsServer, runnerMgr, logger)
 	}
-
+	
 	// Start gRPC server
-	//grpcServer := daemon.NewGRPCServer(runnerMgr, db, logger)
-	//go func() {
-	//	if err := grpcServer.Start(); err != nil {
-	//		logger.Error("gRPC server error", zap.Error(err.(error)))
-	//	}
-	//}()
-
+	grpcServer := daemon.NewGRPCServer(cfg.Daemon.GRPCPort, runnerMgr, db, logger)
+	go func() {
+		if err := grpcServer.Start(); err != nil {
+			logger.Error("gRPC server error", zap.Error(err))
+		}
+	}()
+	
 	logger.Info("stratavore daemon started successfully",
 		zap.Int("grpc_port", cfg.Daemon.GRPCPort),
 		zap.Int("metrics_port", cfg.Docker.Prometheus.Port))
-
+	
 	// Wait for shutdown signal
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
-
+	
 	sig := <-sigCh
 	logger.Info("received shutdown signal", zap.String("signal", sig.String()))
-
+	
 	// Send shutdown notification if notifier is configured
 	if notifier != nil {
-		hostname, _ := os.Hostname()
 		notifier.DaemonStopped(hostname)
 	}
-
+	
 	// Graceful shutdown
 	shutdownCtx, shutdownCancel := context.WithTimeout(
 		context.Background(),
 		time.Duration(cfg.Daemon.ShutdownTimeout)*time.Second,
 	)
 	defer shutdownCancel()
-
+	
 	logger.Info("shutting down daemon...")
-
+	
 	// Stop HTTP server
 	httpServer.Stop(shutdownCtx)
-
+	
 	// Stop metrics server
 	if metricsServer != nil {
 		metricsServer.Stop()
 	}
-
+	
 	// Stop outbox publisher
 	outboxPublisher.Stop()
-
+	
 	// Shutdown runner manager
 	if err := runnerMgr.Shutdown(shutdownCtx); err != nil {
 		logger.Error("error during shutdown", zap.Error(err))
 	}
-
+	
 	logger.Info("daemon shutdown complete")
 	return nil
 }
@@ -212,27 +211,27 @@ func setupLogger(level, format string) (*zap.Logger, error) {
 	if err := zapLevel.UnmarshalText([]byte(level)); err != nil {
 		zapLevel = zapcore.InfoLevel
 	}
-
+	
 	var cfg zap.Config
 	if format == "json" {
 		cfg = zap.NewProductionConfig()
 	} else {
 		cfg = zap.NewDevelopmentConfig()
 	}
-
+	
 	cfg.Level = zap.NewAtomicLevelAt(zapLevel)
 	cfg.EncoderConfig.TimeKey = "ts"
 	cfg.EncoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
-
+	
 	return cfg.Build()
 }
 
 func startReconciliationLoop(ctx context.Context, mgr *daemon.RunnerManager, intervalSeconds int, logger *zap.Logger) {
 	ticker := time.NewTicker(time.Duration(intervalSeconds) * time.Second)
 	defer ticker.Stop()
-
+	
 	logger.Info("reconciliation loop started", zap.Int("interval_seconds", intervalSeconds))
-
+	
 	for {
 		select {
 		case <-ticker.C:
@@ -249,9 +248,9 @@ func startReconciliationLoop(ctx context.Context, mgr *daemon.RunnerManager, int
 func startMetricsUpdateLoop(ctx context.Context, metrics *observability.MetricsServer, mgr *daemon.RunnerManager, logger *zap.Logger) {
 	ticker := time.NewTicker(10 * time.Second)
 	defer ticker.Stop()
-
+	
 	startTime := time.Now()
-
+	
 	for {
 		select {
 		case <-ticker.C:
