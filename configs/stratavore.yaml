@@ -1,0 +1,111 @@
+# Stratavore Configuration File
+# Default location: ~/.config/stratavore/stratavore.yaml
+
+# Database configuration
+database:
+  # PostgreSQL (main state database)
+  postgresql:
+    host: localhost
+    port: 5432
+    database: stratavore_state
+    user: stratavore
+    password: stratavore_password  # Change in production!
+    sslmode: prefer
+    max_conns: 25
+    min_conns: 5
+  
+  # SQLite (local cache)
+  sqlite:
+    path: ~/.config/stratavore/stratavore.db
+
+# Docker infrastructure integration
+docker:
+  # API Gateway (optional, for lex-docker integration)
+  api_gateway:
+    host: localhost
+    port: 8000
+    enabled: false
+  
+  # RabbitMQ event messaging
+  rabbitmq:
+    host: localhost
+    port: 5672
+    user: guest
+    password: guest
+    exchange: stratavore.events
+    publisher_confirms: true  # Reliable delivery
+  
+  # Telegram notifications (recommended)
+  telegram:
+    token: ""  # Get from @BotFather on Telegram
+    chat_id: ""  # Get from @userinfobot
+    # Or set via environment:
+    # STRATAVORE_DOCKER_TELEGRAM_TOKEN=bot123456:ABC...
+    # STRATAVORE_DOCKER_TELEGRAM_CHAT_ID=123456789
+  
+  # ntfy notifications (deprecated - use Telegram instead)
+  ntfy:
+    host: localhost
+    port: 2586
+    topics:
+      status: stratavore-status
+      alerts: stratavore-alerts
+  
+  # Prometheus metrics
+  prometheus:
+    enabled: true
+    port: 9091
+    path: /metrics
+  
+  # Qdrant vector store (future feature)
+  qdrant:
+    host: localhost
+    port: 6333
+    enabled: false
+
+# Daemon settings
+daemon:
+  # gRPC server port for CLI/agent communication
+  grpc_port: 50051
+  
+  # Heartbeat interval (seconds)
+  heartbeat_interval_seconds: 10
+  
+  # Reconciliation interval for detecting stale runners (seconds)
+  reconcile_interval_seconds: 30
+  
+  # Outbox publisher polling interval (seconds)
+  outbox_poll_interval_seconds: 2
+  
+  # Graceful shutdown timeout (seconds)
+  shutdown_timeout_seconds: 30
+  
+  # Data directory for runtime state
+  data_dir: ~/.local/share/stratavore
+
+# Observability
+observability:
+  # Log level: debug, info, warn, error
+  log_level: info
+  
+  # Log format: json or console
+  log_format: json
+  
+  # OpenTelemetry tracing (future feature)
+  tracing_enabled: false
+
+# Security settings
+security:
+  # Enable mTLS for gRPC
+  enable_mtls: false
+  
+  # Certificate files (if mTLS enabled)
+  cert_file: ""
+  key_file: ""
+  ca_file: ""
+  
+  # Token secret file (for agent authentication)
+  token_secret_path: ""
+  
+  # Join token TTL (seconds)
+  join_token_ttl_seconds: 300

@@ -1,0 +1,18 @@
+-- Drop functions
+DROP FUNCTION IF EXISTS hash_project(TEXT);
+DROP FUNCTION IF EXISTS normalize_period_start(TEXT, TIMESTAMPTZ);
+DROP FUNCTION IF EXISTS reconcile_stale_runners(INTEGER);
+DROP FUNCTION IF EXISTS update_updated_at();
+
+-- Drop tables in reverse dependency order
+DROP TABLE IF EXISTS agent_tokens CASCADE;
+DROP TABLE IF EXISTS daemon_state CASCADE;
+DROP TABLE IF EXISTS resource_quotas CASCADE;
+DROP TABLE IF EXISTS token_budgets CASCADE;
+DROP TABLE IF EXISTS events CASCADE;
+DROP TABLE IF EXISTS outbox CASCADE;
+DROP TABLE IF EXISTS session_blobs CASCADE;
+DROP TABLE IF EXISTS sessions CASCADE;
+DROP TABLE IF EXISTS project_capabilities CASCADE;
+DROP TABLE IF EXISTS runners CASCADE;
+DROP TABLE IF EXISTS projects CASCADE;

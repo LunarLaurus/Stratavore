@@ -1,0 +1,304 @@
+syntax = "proto3";
+
+package stratavore;
+
+option go_package = "github.com/meridian/stratavore/pkg/api";
+
+// StratavoreService provides the daemon API
+service StratavoreService {
+  // Runner management
+  rpc LaunchRunner(LaunchRunnerRequest) returns (LaunchRunnerResponse);
+  rpc StopRunner(StopRunnerRequest) returns (StopRunnerResponse);
+  rpc GetRunner(GetRunnerRequest) returns (GetRunnerResponse);
+  rpc ListRunners(ListRunnersRequest) returns (ListRunnersResponse);
+  rpc AttachRunner(AttachRunnerRequest) returns (stream AttachRunnerResponse);
+  
+  // Project management
+  rpc CreateProject(CreateProjectRequest) returns (CreateProjectResponse);
+  rpc GetProject(GetProjectRequest) returns (GetProjectResponse);
+  rpc ListProjects(ListProjectsRequest) returns (ListProjectsResponse);
+  rpc DeleteProject(DeleteProjectRequest) returns (DeleteProjectResponse);
+  
+  // Session management
+  rpc ListSessions(ListSessionsRequest) returns (ListSessionsResponse);
+  rpc GetSession(GetSessionRequest) returns (GetSessionResponse);
+  
+  // Heartbeat from agents
+  rpc SendHeartbeat(HeartbeatRequest) returns (HeartbeatResponse);
+  
+  // Status and metrics
+  rpc GetStatus(GetStatusRequest) returns (GetStatusResponse);
+  rpc GetMetrics(GetMetricsRequest) returns (GetMetricsResponse);
+  
+  // Reconciliation
+  rpc TriggerReconciliation(TriggerReconciliationRequest) returns (TriggerReconciliationResponse);
+}
+
+// Launch runner request
+message LaunchRunnerRequest {
+  string project_name = 1;
+  string project_path = 2;
+  repeated string flags = 3;
+  repeated string capabilities = 4;
+  map<string, string> environment = 5;
+  string conversation_mode = 6;  // new, continue, resume
+  string session_id = 7;
+  string runtime_type = 8;  // process, container, remote
+}
+
+message LaunchRunnerResponse {
+  Runner runner = 1;
+  string error = 2;
+}
+
+// Stop runner request
+message StopRunnerRequest {
+  string runner_id = 1;
+  bool force = 2;  // SIGKILL instead of SIGTERM
+  int32 timeout_seconds = 3;
+}
+
+message StopRunnerResponse {
+  bool success = 1;
+  string error = 2;
+}
+
+// Get runner request
+message GetRunnerRequest {
+  string runner_id = 1;
+}
+
+message GetRunnerResponse {
+  Runner runner = 1;
+  string error = 2;
+}
+
+// List runners request
+message ListRunnersRequest {
+  string project_name = 1;  // Filter by project (optional)
+  string status = 2;  // Filter by status (optional)
+  int32 limit = 3;
+  int32 offset = 4;
+}
+
+message ListRunnersResponse {
+  repeated Runner runners = 1;
+  int32 total = 2;
+  string error = 3;
+}
+
+// Attach runner request (bidirectional streaming for PTY)
+message AttachRunnerRequest {
+  string runner_id = 1;
+  bytes stdin_data = 2;  // Terminal input
+  WindowSize window_size = 3;  // Terminal size
+}
+
+message AttachRunnerResponse {
+  bytes stdout_data = 1;  // Terminal output
+  bytes stderr_data = 2;
+  string error = 3;
+}
+
+message WindowSize {
+  int32 rows = 1;
+  int32 cols = 2;
+}
+
+// Create project request
+message CreateProjectRequest {
+  string name = 1;
+  string path = 2;
+  string description = 3;
+  repeated string tags = 4;
+}
+
+message CreateProjectResponse {
+  Project project = 1;
+  string error = 2;
+}
+
+// Get project request
+message GetProjectRequest {
+  string name = 1;
+}
+
+message GetProjectResponse {
+  Project project = 1;
+  string error = 2;
+}
+
+// List projects request
+message ListProjectsRequest {
+  string status = 1;  // Filter by status (optional)
+}
+
+message ListProjectsResponse {
+  repeated Project projects = 1;
+  string error = 2;
+}
+
+// Delete project request
+message DeleteProjectRequest {
+  string name = 1;
+  bool archive = 2;  // Archive instead of delete
+}
+
+message DeleteProjectResponse {
+  bool success = 1;
+  string error = 2;
+}
+
+// List sessions request
+message ListSessionsRequest {
+  string project_name = 1;
+  string runner_id = 2;
+  bool resumable_only = 3;
+}
+
+message ListSessionsResponse {
+  repeated Session sessions = 1;
+  string error = 2;
+}
+
+// Get session request
+message GetSessionRequest {
+  string session_id = 1;
+}
+
+message GetSessionResponse {
+  Session session = 1;
+  string error = 2;
+}
+
+// Heartbeat request from agent
+message HeartbeatRequest {
+  string runner_id = 1;
+  string status = 2;
+  double cpu_percent = 3;
+  int64 memory_mb = 4;
+  int64 tokens_used = 5;
+  string session_id = 6;
+  string agent_version = 7;
+  string hostname = 8;
+}
+
+message HeartbeatResponse {
+  bool success = 1;
+  string command = 2;  // Commands from daemon: pause, resume, terminate
+  string error = 3;
+}
+
+// Get status request
+message GetStatusRequest {}
+
+message GetStatusResponse {
+  DaemonStatus daemon = 1;
+  GlobalMetrics metrics = 2;
+  string error = 3;
+}
+
+// Get metrics request
+message GetMetricsRequest {}
+
+message GetMetricsResponse {
+  GlobalMetrics metrics = 1;
+  repeated ProjectMetrics projects = 2;
+  string error = 3;
+}
+
+// Trigger reconciliation
+message TriggerReconciliationRequest {}
+
+message TriggerReconciliationResponse {
+  int32 reconciled_count = 1;
+  repeated string failed_runner_ids = 2;
+  string error = 3;
+}
+
+// Domain models
+
+message Runner {
+  string id = 1;
+  string runtime_type = 2;
+  string runtime_id = 3;
+  string node_id = 4;
+  string project_name = 5;
+  string project_path = 6;
+  string status = 7;
+  repeated string flags = 8;
+  repeated string capabilities = 9;
+  map<string, string> environment = 10;
+  string session_id = 11;
+  string conversation_mode = 12;
+  int64 tokens_used = 13;
+  double cpu_percent = 14;
+  int64 memory_mb = 15;
+  int32 restart_attempts = 16;
+  int32 max_restart_attempts = 17;
+  string started_at = 18;  // RFC3339 timestamp
+  string last_heartbeat = 19;
+  int32 heartbeat_ttl_seconds = 20;
+  string terminated_at = 21;
+  int32 exit_code = 22;
+  string created_at = 23;
+  string updated_at = 24;
+}
+
+message Project {
+  string name = 1;
+  string path = 2;
+  string status = 3;
+  string description = 4;
+  repeated string tags = 5;
+  int32 total_runners = 6;
+  int32 active_runners = 7;
+  int32 total_sessions = 8;
+  int64 total_tokens = 9;
+  string created_at = 10;
+  string last_accessed_at = 11;
+  string archived_at = 12;
+  string updated_at = 13;
+}
+
+message Session {
+  string id = 1;
+  string runner_id = 2;
+  string project_name = 3;
+  string started_at = 4;
+  string ended_at = 5;
+  string last_message_at = 6;
+  int32 message_count = 7;
+  int64 tokens_used = 8;
+  bool resumable = 9;
+  string resumed_from = 10;
+  string summary = 11;
+  string transcript_s3_key = 12;
+  int64 transcript_size_bytes = 13;
+  string created_at = 14;
+}
+
+message DaemonStatus {
+  string daemon_id = 1;
+  string hostname = 2;
+  string version = 3;
+  string started_at = 4;
+  string last_heartbeat = 5;
+  bool healthy = 6;
+}
+
+message GlobalMetrics {
+  int32 active_runners = 1;
+  int32 active_projects = 2;
+  int32 total_sessions = 3;
+  int64 tokens_used = 4;
+  int64 token_limit = 5;
+}
+
+message ProjectMetrics {
+  string project_name = 1;
+  int32 active_runners = 2;
+  int64 tokens_used = 3;
+  double avg_cpu_percent = 4;
+  int64 total_memory_mb = 5;
+}

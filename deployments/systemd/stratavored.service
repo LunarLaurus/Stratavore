@@ -1,0 +1,46 @@
+[Unit]
+Description=Stratavore Daemon - AI Development Workspace Orchestrator
+Documentation=https://github.com/meridian/stratavore
+After=network.target postgresql.service rabbitmq-server.service
+Wants=postgresql.service rabbitmq-server.service
+
+[Service]
+Type=simple
+User=stratavore
+Group=stratavore
+WorkingDirectory=/var/lib/stratavore
+
+# Environment
+Environment="STRATAVORE_CONFIG=/etc/stratavore/stratavore.yaml"
+
+# Main process
+ExecStart=/usr/local/bin/stratavored
+ExecReload=/bin/kill -HUP $MAINPID
+KillMode=mixed
+KillSignal=SIGTERM
+TimeoutStopSec=30
+
+# Restart policy
+Restart=on-failure
+RestartSec=5
+StartLimitInterval=60
+StartLimitBurst=3
+
+# Security
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/stratavore /var/log/stratavore
+
+# Resource limits
+LimitNOFILE=65536
+LimitNPROC=4096
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=stratavored
+
+[Install]
+WantedBy=multi-user.target
