@@ -2,7 +2,6 @@ package messaging
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/meridian/stratavore/internal/storage"
@@ -12,12 +11,12 @@ import (
 
 // OutboxPublisher polls the outbox table and publishes events
 type OutboxPublisher struct {
-	db       *storage.PostgresClient
-	client   *Client
-	interval time.Duration
+	db        *storage.PostgresClient
+	client    *Client
+	interval  time.Duration
 	batchSize int
-	logger   *zap.Logger
-	stopCh   chan struct{}
+	logger    *zap.Logger
+	stopCh    chan struct{}
 }
 
 // NewOutboxPublisher creates a new outbox publisher
@@ -42,11 +41,11 @@ func NewOutboxPublisher(
 func (p *OutboxPublisher) Start(ctx context.Context) {
 	ticker := time.NewTicker(p.interval)
 	defer ticker.Stop()
-	
+
 	p.logger.Info("outbox publisher started",
 		zap.Duration("interval", p.interval),
 		zap.Int("batch_size", p.batchSize))
-	
+
 	for {
 		select {
 		case <-ticker.C:
@@ -73,13 +72,13 @@ func (p *OutboxPublisher) processBatch(ctx context.Context) {
 		p.logger.Error("failed to get pending outbox entries", zap.Error(err))
 		return
 	}
-	
+
 	if len(entries) == 0 {
 		return
 	}
-	
+
 	p.logger.Debug("processing outbox batch", zap.Int("count", len(entries)))
-	
+
 	for _, entry := range entries {
 		p.processEntry(ctx, entry)
 	}
@@ -93,11 +92,11 @@ func (p *OutboxPublisher) processEntry(ctx context.Context, entry *types.OutboxE
 			zap.Int64("id", entry.ID),
 			zap.String("event_type", entry.EventType),
 			zap.Int("attempts", entry.Attempts))
-		
+
 		// Could move to DLQ here instead of just logging
 		return
 	}
-	
+
 	// Try to publish
 	err := p.client.Publish(ctx, entry.RoutingKey, entry.Payload)
 	if err != nil {
@@ -105,16 +104,16 @@ func (p *OutboxPublisher) processEntry(ctx context.Context, entry *types.OutboxE
 			zap.Int64("id", entry.ID),
 			zap.String("event_type", entry.EventType),
 			zap.Error(err))
-		
+
 		// Increment attempts and schedule retry with exponential backoff
 		errMsg := err.Error()
 		if err := p.db.IncrementOutboxAttempts(ctx, entry.ID, errMsg); err != nil {
 			p.logger.Error("failed to increment outbox attempts", zap.Error(err))
 		}
-		
+
 		return
 	}
-	
+
 	// Mark as delivered
 	if err := p.db.MarkOutboxDelivered(ctx, entry.ID); err != nil {
 		p.logger.Error("failed to mark outbox delivered",
@@ -122,7 +121,7 @@ func (p *OutboxPublisher) processEntry(ctx context.Context, entry *types.OutboxE
 			zap.Error(err))
 		return
 	}
-	
+
 	p.logger.Debug("published outbox entry",
 		zap.Int64("id", entry.ID),
 		zap.String("event_id", entry.EventID),
@@ -135,6 +134,6 @@ func (p *OutboxPublisher) GetStats(ctx context.Context) (map[string]interface{},
 	// Could query database for stats like pending count, oldest pending, etc.
 	return map[string]interface{}{
 		"interval_seconds": p.interval.Seconds(),
-		"batch_size":      p.batchSize,
+		"batch_size":       p.batchSize,
 	}, nil
 }
