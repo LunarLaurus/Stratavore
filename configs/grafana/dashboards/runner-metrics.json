@@ -1,0 +1,215 @@
+{
+  "dashboard": {
+    "id": null,
+    "uid": "stratavore-runners",
+    "title": "Stratavore — Runner Metrics",
+    "description": "Per-runner CPU, memory, token consumption and lifecycle events",
+    "tags": ["stratavore", "runners"],
+    "timezone": "browser",
+    "schemaVersion": 38,
+    "version": 1,
+    "refresh": "10s",
+    "time": { "from": "now-1h", "to": "now" },
+    "templating": {
+      "list": [
+        {
+          "name": "datasource",
+          "type": "datasource",
+          "label": "Datasource",
+          "query": "prometheus",
+          "current": { "text": "Prometheus", "value": "Prometheus" },
+          "hide": 0
+        },
+        {
+          "name": "project",
+          "type": "query",
+          "label": "Project",
+          "datasource": { "type": "prometheus", "uid": "$datasource" },
+          "query": "label_values(stratavore_runners_by_project, project)",
+          "includeAll": true,
+          "allValue": ".*",
+          "multi": true,
+          "refresh": 2,
+          "hide": 0
+        }
+      ]
+    },
+    "panels": [
+      {
+        "id": 1,
+        "type": "row",
+        "title": "Runner Health",
+        "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+        "collapsed": false
+      },
+      {
+        "id": 2, "type": "stat", "title": "Running",
+        "gridPos": { "h": 4, "w": 3, "x": 0, "y": 1 },
+        "datasource": { "type": "prometheus", "uid": "$datasource" },
+        "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value", "graphMode": "area" },
+        "fieldConfig": { "defaults": { "unit": "short",
+          "color": { "mode": "fixed", "fixedColor": "green" }
+        }},
+        "targets": [{ "expr": "sum(stratavore_runners_total{status=\"running\"})", "refId": "A" }]
+      },
+      {
+        "id": 3, "type": "stat", "title": "Starting",
+        "gridPos": { "h": 4, "w": 3, "x": 3, "y": 1 },
+        "datasource": { "type": "prometheus", "uid": "$datasource" },
+        "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value", "graphMode": "area" },
+        "fieldConfig": { "defaults": { "unit": "short",
+          "color": { "mode": "fixed", "fixedColor": "yellow" }
+        }},
+        "targets": [{ "expr": "sum(stratavore_runners_total{status=\"starting\"}) or vector(0)", "refId": "A" }]
+      },
+      {
+        "id": 4, "type": "stat", "title": "Stopped",
+        "gridPos": { "h": 4, "w": 3, "x": 6, "y": 1 },
+        "datasource": { "type": "prometheus", "uid": "$datasource" },
+        "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value", "graphMode": "area" },
+        "fieldConfig": { "defaults": { "unit": "short",
+          "color": { "mode": "fixed", "fixedColor": "gray" }
+        }},
+        "targets": [{ "expr": "sum(stratavore_runners_total{status=\"stopped\"}) or vector(0)", "refId": "A" }]
+      },
+      {
+        "id": 5, "type": "stat", "title": "Failed",
+        "gridPos": { "h": 4, "w": 3, "x": 9, "y": 1 },
+        "datasource": { "type": "prometheus", "uid": "$datasource" },
+        "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background", "graphMode": "none" },
+        "fieldConfig": { "defaults": { "unit": "short",
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [{"color":"green","value":null},{"color":"red","value":1}]}
+        }},
+        "targets": [{ "expr": "sum(stratavore_runners_total{status=\"failed\"}) or vector(0)", "refId": "A" }]
+      },
+      {
+        "id": 6, "type": "stat", "title": "Launch Rate (5m)",
+        "gridPos": { "h": 4, "w": 6, "x": 12, "y": 1 },
+        "datasource": { "type": "prometheus", "uid": "$datasource" },
+        "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value", "graphMode": "area" },
+        "fieldConfig": { "defaults": { "unit": "reqpm" }},
+        "targets": [{ "expr": "sum(rate(stratavore_runners_total[5m])) * 60", "legendFormat": "launches/min", "refId": "A" }]
+      },
+      {
+        "id": 7, "type": "stat", "title": "Projects Active",
+        "gridPos": { "h": 4, "w": 6, "x": 18, "y": 1 },
+        "datasource": { "type": "prometheus", "uid": "$datasource" },
+        "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value", "graphMode": "none" },
+        "fieldConfig": { "defaults": { "unit": "short" }},
+        "targets": [{ "expr": "count(stratavore_runners_by_project > 0)", "legendFormat": "projects", "refId": "A" }]
+      },
+      {
+        "id": 10,
+        "type": "row",
+        "title": "Resource Utilisation",
+        "gridPos": { "h": 1, "w": 24, "x": 0, "y": 5 },
+        "collapsed": false
+      },
+      {
+        "id": 11, "type": "timeseries", "title": "CPU % per Runner (avg)",
+        "gridPos": { "h": 8, "w": 12, "x": 0, "y": 6 },
+        "datasource": { "type": "prometheus", "uid": "$datasource" },
+        "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "multi" }},
+        "fieldConfig": { "defaults": { "unit": "percent", "min": 0, "max": 100,
+          "custom": { "lineWidth": 2, "fillOpacity": 10 }
+        }},
+        "targets": [
+          {
+            "expr": "avg by (project) (stratavore_runner_cpu_percent{project=~\"$project\"})",
+            "legendFormat": "{{project}}",
+            "refId": "A"
+          }
+        ]
+      },
+      {
+        "id": 12, "type": "timeseries", "title": "Memory MB per Runner (avg)",
+        "gridPos": { "h": 8, "w": 12, "x": 12, "y": 6 },
+        "datasource": { "type": "prometheus", "uid": "$datasource" },
+        "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "multi" }},
+        "fieldConfig": { "defaults": { "unit": "decmbytes", "custom": { "lineWidth": 2, "fillOpacity": 10 }}},
+        "targets": [
+          {
+            "expr": "avg by (project) (stratavore_runner_memory_mb{project=~\"$project\"})",
+            "legendFormat": "{{project}}",
+            "refId": "A"
+          }
+        ]
+      },
+      {
+        "id": 20,
+        "type": "row",
+        "title": "Token Budget",
+        "gridPos": { "h": 1, "w": 24, "x": 0, "y": 14 },
+        "collapsed": false
+      },
+      {
+        "id": 21, "type": "gauge", "title": "Global Token Budget Used %",
+        "gridPos": { "h": 8, "w": 6, "x": 0, "y": 15 },
+        "datasource": { "type": "prometheus", "uid": "$datasource" },
+        "options": {
+          "reduceOptions": { "calcs": ["lastNotNull"] },
+          "orientation": "auto",
+          "showThresholdLabels": false,
+          "showThresholdMarkers": true
+        },
+        "fieldConfig": { "defaults": { "unit": "percent", "min": 0, "max": 100,
+          "thresholds": { "mode": "absolute", "steps": [
+            {"color":"green","value":null}, {"color":"yellow","value":75}, {"color":"red","value":90}
+          ]}
+        }},
+        "targets": [
+          {
+            "expr": "100 * sum(stratavore_tokens_used_total) / sum(stratavore_tokens_budget_total)",
+            "legendFormat": "Used %",
+            "refId": "A"
+          }
+        ]
+      },
+      {
+        "id": 22, "type": "timeseries", "title": "Cumulative Tokens by Scope",
+        "gridPos": { "h": 8, "w": 18, "x": 6, "y": 15 },
+        "datasource": { "type": "prometheus", "uid": "$datasource" },
+        "options": { "legend": { "displayMode": "table", "placement": "right" }, "tooltip": { "mode": "multi" }},
+        "fieldConfig": { "defaults": { "unit": "short", "custom": { "lineWidth": 2, "fillOpacity": 8 }}},
+        "targets": [
+          {
+            "expr": "sum by (scope) (stratavore_tokens_used_total)",
+            "legendFormat": "{{scope}}",
+            "refId": "A"
+          }
+        ]
+      },
+      {
+        "id": 30,
+        "type": "row",
+        "title": "Heartbeats & Latency",
+        "gridPos": { "h": 1, "w": 24, "x": 0, "y": 23 },
+        "collapsed": false
+      },
+      {
+        "id": 31, "type": "timeseries", "title": "Heartbeat Latency — p50 / p95 / p99",
+        "gridPos": { "h": 8, "w": 12, "x": 0, "y": 24 },
+        "datasource": { "type": "prometheus", "uid": "$datasource" },
+        "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "multi" }},
+        "fieldConfig": { "defaults": { "unit": "s", "custom": { "lineWidth": 2 }}},
+        "targets": [
+          { "expr": "histogram_quantile(0.50, rate(stratavore_heartbeat_latency_seconds_bucket[5m]))", "legendFormat": "p50", "refId": "A" },
+          { "expr": "histogram_quantile(0.95, rate(stratavore_heartbeat_latency_seconds_bucket[5m]))", "legendFormat": "p95", "refId": "B" },
+          { "expr": "histogram_quantile(0.99, rate(stratavore_heartbeat_latency_seconds_bucket[5m]))", "legendFormat": "p99", "refId": "C" }
+        ]
+      },
+      {
+        "id": 32, "type": "timeseries", "title": "Heartbeat Rate",
+        "gridPos": { "h": 8, "w": 12, "x": 12, "y": 24 },
+        "datasource": { "type": "prometheus", "uid": "$datasource" },
+        "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "single" }},
+        "fieldConfig": { "defaults": { "unit": "reqps", "custom": { "lineWidth": 2, "fillOpacity": 10 }}},
+        "targets": [
+          { "expr": "sum(rate(stratavore_heartbeat_latency_seconds_count[1m]))", "legendFormat": "heartbeats/s", "refId": "A" }
+        ]
+      }
+    ]
+  },
+  "overwrite": true
+}

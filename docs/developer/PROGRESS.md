@@ -2,16 +2,25 @@
 
 **Last Updated: February 11, 2026 - Final**
 
-## 🚀 Current Version: v1.3 - Complete with gRPC
-**Status: 99% Complete** ✅  
+## 🚀 Current Version: v1.4 - Docker Proto Builder + Security + Grafana
+**Status: 97% Complete** ✅  
 **Released: February 11, 2026**
 
-### Latest Sprint: Phase 8 - gRPC & Protobuf Integration
+### Latest Sprint: Phase 9 - Docker Builder, Auth, Cache Manager, Grafana
 **Status: COMPLETE**  
-**Started: February 11, 2026**  
-**Duration: 45 minutes**
+**Started: February 11, 2026**
 
-### Sprint 8 Objectives - ALL COMPLETE ✅
+### Sprint 9 Objectives - ALL COMPLETE ✅
+1. ✅ `internal/cache/manager.go` — cache-aside wrapper with pass-through fallback
+2. ✅ `internal/auth/jwt.go` — HMAC JWT validator + HTTP middleware
+3. ✅ `internal/auth/ratelimit.go` — per-client token-bucket rate limiter
+4. ✅ `Dockerfile.builder` — multi-stage Docker build with protoc + gRPC plugins
+5. ✅ `docker-compose.builder.yml` — optional proto build / gRPC stack override
+6. ✅ Grafana overview dashboard — rewritten with modern panel types (20+ panels)
+7. ✅ Grafana runner-metrics dashboard — new, with CPU/memory/latency/budget rows
+8. ✅ Makefile new targets: `docker-build-proto`, `docker-up-grpc`, `docker-proto-shell`
+
+### Previous Sprint: Phase 8 - gRPC & Protobuf Integration (COMPLETE)
 1. ✅ Protobuf code generation in build scripts
 2. ✅ Auto-detection of protobuf tools
 3. ✅ Graceful fallback to HTTP API

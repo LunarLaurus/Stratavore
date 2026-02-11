@@ -1,0 +1,137 @@
+# =============================================================================
+# docker-compose.builder.yml
+#
+# Optional Compose override that adds a "builder" service capable of
+# compiling Stratavore with full protobuf / gRPC support.
+#
+# Usage patterns
+# --------------
+#
+# 1. One-shot build – compile binaries into ./dist on the host:
+#
+#       docker compose -f docker-compose.builder.yml run --rm builder
+#
+#    Binaries are written to ./dist/bin/ on your workstation.
+#    Generated protobuf stubs land in ./dist/generated/.
+#
+# 2. Stack override – swap the pre-built daemon image for a gRPC-capable one:
+#
+#       docker compose \
+#         -f docker-compose.yml \
+#         -f docker-compose.builder.yml \
+#         up --build stratavored
+#
+#    This rebuilds the "runtime" stage of Dockerfile.builder and wires it into
+#    the rest of the Compose stack (postgres, rabbitmq, redis, etc.).
+#
+# 3. Full stack with gRPC daemon (convenience alias):
+#
+#       docker compose -f docker-compose.yml -f docker-compose.builder.yml up
+#
+# =============================================================================
+
+version: '3.8'
+
+services:
+
+  # ---------------------------------------------------------------------------
+  # builder  –  runs protoc + go build, exports artifacts to ./dist
+  # ---------------------------------------------------------------------------
+  builder:
+    build:
+      context: .
+      dockerfile: Dockerfile.builder
+      target: export                 # stops at the export stage
+      args:
+        VERSION: "${VERSION:-dev}"
+        COMMIT:  "${COMMIT:-unknown}"
+    image: stratavore-builder:${VERSION:-dev}
+    container_name: stratavore-builder
+    volumes:
+      # Bind-mount ./dist so compiled artefacts appear on the host
+      - ./dist:/dist
+    # Nothing to restart – this is a one-shot build container
+    restart: "no"
+    # Override CMD to actually copy artefacts to the bind-mount
+    command: >
+      sh -c "
+        cp -r /dist/bin           /dist/bin &&
+        echo '=== Stratavore build complete ===' &&
+        echo '' &&
+        echo 'Binaries:' &&
+        ls -lh /dist/bin/ &&
+        echo '' &&
+        echo 'Generated protobuf:' &&
+        ls -lh /dist/generated/ &&
+        echo '' &&
+        echo 'Test results:' &&
+        cat /dist/test-results.txt
+      "
+    # Attach to no network – pure build tooling
+    network_mode: none
+
+  # ---------------------------------------------------------------------------
+  # stratavored override  –  replace the pre-built daemon with the gRPC build
+  # ---------------------------------------------------------------------------
+  # When this file is layered on top of docker-compose.yml via -f, the
+  # "stratavored" service definition below *merges* with the base one.
+  # It swaps the Dockerfile target so the full gRPC daemon is used instead
+  # of the slimmer HTTP-only Dockerfile.daemon image.
+  stratavored:
+    build:
+      context: .
+      dockerfile: Dockerfile.builder
+      target: runtime              # final production stage with gRPC compiled in
+      args:
+        VERSION: "${VERSION:-dev}"
+        COMMIT:  "${COMMIT:-unknown}"
+    image: stratavore-daemon-grpc:${VERSION:-dev}
+    # Inherit everything else (env, volumes, depends_on, ports) from base file
+
+  # ---------------------------------------------------------------------------
+  # proto-dev  –  interactive protobuf dev shell (optional convenience target)
+  # ---------------------------------------------------------------------------
+  proto-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile.builder
+      target: proto-toolchain      # just the toolchain, no app code compiled
+    image: stratavore-proto-toolchain:${VERSION:-dev}
+    container_name: stratavore-proto-dev
+    volumes:
+      # Mount source so you can edit .proto files and regenerate inside the container
+      - .:/workspace
+    working_dir: /workspace
+    entrypoint: sh
+    stdin_open: true
+    tty: true
+    restart: "no"
+    # Useful commands inside the shell:
+    #   protoc --go_out=pkg/api/generated --go_opt=paths=source_relative \
+    #          --go-grpc_out=pkg/api/generated --go-grpc_opt=paths=source_relative \
+    #          --proto_path=pkg/api pkg/api/stratavore.proto
+    #   make proto
+    #   make build
+    network_mode: none
+    profiles:
+      - dev
+
+# =============================================================================
+# Notes
+# =============================================================================
+#
+# The "builder" and "proto-dev" services share no networks because they are
+# pure build tooling and don't need to communicate with the application stack.
+#
+# The "stratavored" service override intentionally omits most keys so Compose
+# merges cleanly with the base docker-compose.yml.  Only the build stanza and
+# image tag are overridden.
+#
+# Environment variables:
+#   VERSION   – semantic version tag injected into the binary (default: dev)
+#   COMMIT    – git short SHA injected into the binary (default: unknown)
+#
+# Example with version pinning:
+#   VERSION=1.3.0 COMMIT=$(git rev-parse --short HEAD) \
+#     docker compose -f docker-compose.yml -f docker-compose.builder.yml up --build
+# =============================================================================

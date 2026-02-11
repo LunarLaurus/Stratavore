@@ -14,16 +14,16 @@
 **Impact:** HIGH - 10x faster queries
 
 **Tasks:**
-- [ ] Create Redis client wrapper
-- [ ] Implement cache-aside pattern for projects
-- [ ] Cache runner lists with TTL
-- [ ] Cache-through for frequently accessed data
-- [ ] Add cache invalidation on updates
-- [ ] Implement cache warming on startup
+- [x] Create Redis client wrapper
+- [x] Implement cache-aside pattern for projects
+- [x] Cache runner lists with TTL
+- [x] Cache-through for frequently accessed data
+- [x] Add cache invalidation on updates
+- [x] Implement cache warming on startup
 
 **Files to create:**
-- `internal/cache/redis.go`
-- `internal/cache/manager.go`
+- ✅ `internal/cache/redis.go`
+- ✅ `internal/cache/manager.go`
 
 **Benefits:**
 - Sub-millisecond project queries
@@ -62,8 +62,9 @@
 **Impact:** CRITICAL - Production security
 
 **Tasks:**
-- [ ] Implement API authentication (JWT/API keys)
-- [ ] Add rate limiting per client
+- [x] Implement API authentication (JWT/API keys) — `internal/auth/jwt.go`
+- [x] Add rate limiting per client — `internal/auth/ratelimit.go`
+- [ ] Wire auth middleware into HTTP server (`internal/daemon/http_server.go`)
 - [ ] Enable mTLS for internal communication
 - [ ] Implement agent token validation
 - [ ] Add request signing (HMAC)
@@ -73,10 +74,10 @@
 - [ ] Security audit documentation
 
 **Files to create:**
-- `internal/auth/jwt.go`
-- `internal/auth/ratelimit.go`
-- `internal/auth/hmac.go`
-- `docs/SECURITY.md`
+- ✅ `internal/auth/jwt.go`
+- ✅ `internal/auth/ratelimit.go`
+- [ ] `internal/auth/hmac.go`
+- [ ] `docs/SECURITY.md`
 
 ---
 
@@ -86,19 +87,19 @@
 **Impact:** MEDIUM - Better visibility
 
 **Tasks:**
-- [ ] Create main dashboard JSON
-- [ ] Add runner metrics panel
-- [ ] Add token usage panel
-- [ ] Add event rate panel
-- [ ] Add error rate panel
-- [ ] Add latency histograms
-- [ ] Add project breakdown
-- [ ] Configure auto-provisioning
+- [x] Create main dashboard JSON (overview — modernised)
+- [x] Add runner metrics panel (runner-metrics dashboard)
+- [x] Add token usage panel
+- [x] Add event rate panel
+- [x] Add error rate panel
+- [x] Add latency histograms (p50/p95/p99)
+- [x] Add project breakdown
+- [x] Configure auto-provisioning
 
 **Files to create:**
-- `configs/grafana/dashboards/stratavore-overview.json`
-- `configs/grafana/dashboards/runner-metrics.json`
-- `configs/grafana/datasources/prometheus.yml`
+- ✅ `configs/grafana/dashboards/stratavore-overview.json`
+- ✅ `configs/grafana/dashboards/runner-metrics.json`
+- ✅ `configs/grafana/datasources/prometheus.yml`
 
 ---
 

@@ -102,6 +102,27 @@ docker-setup:
 	@echo "Setting up Docker infrastructure integration..."
 	./scripts/setup-docker-integration.sh
 
+# Build the full protobuf-capable image and export binaries to ./dist
+docker-build-proto:
+	@echo "Building Stratavore with protobuf support (Docker)..."
+	mkdir -p dist
+	docker build -f Dockerfile.builder --target export \
+		--build-arg VERSION=$(VERSION) \
+		--build-arg COMMIT=$(COMMIT) \
+		-t stratavore-builder:$(VERSION) .
+	docker run --rm -v "$(PWD)/dist:/dist" stratavore-builder:$(VERSION)
+	@echo "[OK] Artifacts in dist/"
+
+# Launch the full stack using the gRPC-capable daemon image
+docker-up-grpc:
+	@echo "Starting full Stratavore stack (gRPC build)..."
+	VERSION=$(VERSION) COMMIT=$(COMMIT) \
+	docker compose -f docker-compose.yml -f docker-compose.builder.yml up --build
+
+# Open an interactive protobuf dev shell
+docker-proto-shell:
+	docker compose -f docker-compose.builder.yml run --rm proto-dev
+
 systemd-install:
 	@echo "Installing systemd service..."
 	sudo cp deployments/systemd/stratavored.service /etc/systemd/system/
@@ -129,21 +150,24 @@ help:
 	@echo "Stratavore Build System v${VERSION}"
 	@echo ""
 	@echo "Targets:"
-	@echo "  all                - Generate protobuf and build all components (default)"
-	@echo "  deps               - Download dependencies"
-	@echo "  proto              - Generate protobuf Go code (auto-detects tools)"
-	@echo "  build              - Build CLI, daemon, and agent"
-	@echo "  quick              - Quick build without protobuf (development)"
-	@echo "  install            - Install binaries to /usr/local/bin"
-	@echo "  clean              - Remove build artifacts"
-	@echo "  test               - Run unit tests"
-	@echo "  test-integration   - Run integration tests"
-	@echo "  lint               - Run linters"
-	@echo "  migration-up       - Apply database migrations"
-	@echo "  migration-down     - Rollback database migrations"
-	@echo "  docker-setup       - Configure Docker integration"
-	@echo "  systemd-install    - Install systemd service"
-	@echo "  format             - Format Go code"
-	@echo "  run-daemon         - Run daemon in dev mode"
-	@echo "  run-cli            - Run CLI in dev mode"
-	@echo "  install-proto-tools - Install protobuf Go plugins"
+	@echo "  all                  - Generate protobuf and build all components (default)"
+	@echo "  deps                 - Download dependencies"
+	@echo "  proto                - Generate protobuf Go code (auto-detects tools)"
+	@echo "  build                - Build CLI, daemon, and agent"
+	@echo "  quick                - Quick build without protobuf (development)"
+	@echo "  install              - Install binaries to /usr/local/bin"
+	@echo "  clean                - Remove build artifacts"
+	@echo "  test                 - Run unit tests"
+	@echo "  test-integration     - Run integration tests"
+	@echo "  lint                 - Run linters"
+	@echo "  migration-up         - Apply database migrations"
+	@echo "  migration-down       - Rollback database migrations"
+	@echo "  docker-setup         - Configure Docker integration (infra only)"
+	@echo "  docker-build-proto   - Build protobuf-capable image, export bins to ./dist"
+	@echo "  docker-up-grpc       - Start full stack with gRPC daemon (Compose)"
+	@echo "  docker-proto-shell   - Interactive shell with protoc + Go plugins"
+	@echo "  systemd-install      - Install systemd service"
+	@echo "  format               - Format Go code"
+	@echo "  run-daemon           - Run daemon in dev mode"
+	@echo "  run-cli              - Run CLI in dev mode"
+	@echo "  install-proto-tools  - Install protobuf Go plugins"

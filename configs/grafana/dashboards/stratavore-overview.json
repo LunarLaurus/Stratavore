@@ -1,116 +1,170 @@
 {
   "dashboard": {
-    "title": "Stratavore Overview",
+    "id": null,
+    "uid": "stratavore-overview",
+    "title": "Stratavore — Overview",
+    "description": "High-level health, runner counts, token usage and heartbeat latency",
     "tags": ["stratavore", "overview"],
     "timezone": "browser",
-    "schemaVersion": 16,
-    "version": 1,
+    "schemaVersion": 38,
+    "version": 2,
     "refresh": "10s",
+    "time": { "from": "now-1h", "to": "now" },
+    "templating": {
+      "list": [
+        {
+          "name": "datasource",
+          "type": "datasource",
+          "label": "Datasource",
+          "query": "prometheus",
+          "current": { "text": "Prometheus", "value": "Prometheus" },
+          "hide": 0
+        },
+        {
+          "name": "project",
+          "type": "query",
+          "label": "Project",
+          "datasource": { "type": "prometheus", "uid": "$datasource" },
+          "query": "label_values(stratavore_runners_by_project, project)",
+          "includeAll": true,
+          "allValue": ".*",
+          "multi": true,
+          "refresh": 2,
+          "hide": 0
+        }
+      ]
+    },
     "panels": [
       {
-        "id": 1,
-        "title": "Active Runners",
-        "type": "graph",
-        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
-        "targets": [
-          {
-            "expr": "sum(stratavore_runners_total) by (status)",
-            "legendFormat": "{{status}}",
-            "refId": "A"
-          }
-        ],
-        "yaxes": [
-          {"format": "short", "label": "Runners"},
-          {"format": "short"}
-        ]
+        "id": 1, "type": "stat", "title": "Active Runners",
+        "gridPos": { "h": 4, "w": 4, "x": 0, "y": 0 },
+        "datasource": { "type": "prometheus", "uid": "$datasource" },
+        "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value", "graphMode": "area" },
+        "fieldConfig": { "defaults": { "unit": "short",
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [
+            {"color":"green","value":null}, {"color":"yellow","value":50}, {"color":"red","value":100}
+          ]}
+        }},
+        "targets": [{ "expr": "sum(stratavore_runners_total{status=\"running\"})", "legendFormat": "Running", "refId": "A" }]
       },
       {
-        "id": 2,
-        "title": "Token Usage",
-        "type": "graph",
-        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
-        "targets": [
-          {
-            "expr": "stratavore_tokens_used_total",
-            "legendFormat": "Tokens Used",
-            "refId": "A"
-          }
-        ],
-        "yaxes": [
-          {"format": "short", "label": "Tokens"},
-          {"format": "short"}
-        ]
+        "id": 2, "type": "stat", "title": "Total Sessions",
+        "gridPos": { "h": 4, "w": 4, "x": 4, "y": 0 },
+        "datasource": { "type": "prometheus", "uid": "$datasource" },
+        "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value", "graphMode": "area" },
+        "fieldConfig": { "defaults": { "unit": "short", "color": { "mode": "fixed", "fixedColor": "blue" }}},
+        "targets": [{ "expr": "stratavore_sessions_total", "legendFormat": "Sessions", "refId": "A" }]
       },
       {
-        "id": 3,
-        "title": "Runners by Project",
-        "type": "graph",
-        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
-        "targets": [
-          {
-            "expr": "stratavore_runners_by_project",
-            "legendFormat": "{{project}}",
-            "refId": "A"
-          }
-        ]
+        "id": 3, "type": "stat", "title": "Daemon Uptime",
+        "gridPos": { "h": 4, "w": 4, "x": 8, "y": 0 },
+        "datasource": { "type": "prometheus", "uid": "$datasource" },
+        "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value", "graphMode": "none" },
+        "fieldConfig": { "defaults": { "unit": "dtdurations", "color": { "mode": "fixed", "fixedColor": "green" }}},
+        "targets": [{ "expr": "stratavore_daemon_uptime_seconds", "legendFormat": "Uptime", "refId": "A" }]
       },
       {
-        "id": 4,
-        "title": "Heartbeat Latency",
-        "type": "graph",
-        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8},
-        "targets": [
-          {
-            "expr": "stratavore_heartbeat_latency_seconds_avg",
-            "legendFormat": "Avg Latency",
-            "refId": "A"
-          }
-        ],
-        "yaxes": [
-          {"format": "s", "label": "Latency"},
-          {"format": "short"}
-        ]
+        "id": 4, "type": "stat", "title": "Tokens Used (Total)",
+        "gridPos": { "h": 4, "w": 4, "x": 12, "y": 0 },
+        "datasource": { "type": "prometheus", "uid": "$datasource" },
+        "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value", "graphMode": "area" },
+        "fieldConfig": { "defaults": { "unit": "short",
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [
+            {"color":"green","value":null}, {"color":"yellow","value":500000}, {"color":"red","value":1000000}
+          ]}
+        }},
+        "targets": [{ "expr": "sum(stratavore_tokens_used_total)", "legendFormat": "Tokens", "refId": "A" }]
       },
       {
-        "id": 5,
-        "title": "Daemon Uptime",
-        "type": "singlestat",
-        "gridPos": {"h": 4, "w": 6, "x": 0, "y": 16},
-        "targets": [
-          {
-            "expr": "stratavore_daemon_uptime_seconds",
-            "refId": "A"
-          }
-        ],
-        "format": "dtdurations",
-        "valueName": "current"
+        "id": 5, "type": "stat", "title": "Failed Runners",
+        "gridPos": { "h": 4, "w": 4, "x": 16, "y": 0 },
+        "datasource": { "type": "prometheus", "uid": "$datasource" },
+        "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background", "graphMode": "none" },
+        "fieldConfig": { "defaults": { "unit": "short",
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [{"color":"green","value":null}, {"color":"red","value":1}]}
+        }},
+        "targets": [{ "expr": "sum(stratavore_runners_total{status=\"failed\"}) or vector(0)", "legendFormat": "Failed", "refId": "A" }]
       },
       {
-        "id": 6,
-        "title": "Active Sessions",
-        "type": "singlestat",
-        "gridPos": {"h": 4, "w": 6, "x": 6, "y": 16},
-        "targets": [
-          {
-            "expr": "stratavore_sessions_total",
-            "refId": "A"
-          }
-        ],
-        "valueName": "current"
+        "id": 6, "type": "stat", "title": "Avg Heartbeat Latency",
+        "gridPos": { "h": 4, "w": 4, "x": 20, "y": 0 },
+        "datasource": { "type": "prometheus", "uid": "$datasource" },
+        "options": { "reduceOptions": { "calcs": ["mean"] }, "colorMode": "value", "graphMode": "area" },
+        "fieldConfig": { "defaults": { "unit": "s",
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [
+            {"color":"green","value":null}, {"color":"yellow","value":0.1}, {"color":"red","value":0.5}
+          ]}
+        }},
+        "targets": [{ "expr": "stratavore_heartbeat_latency_seconds", "legendFormat": "Latency", "refId": "A" }]
       },
       {
-        "id": 7,
-        "title": "Runner Status Distribution",
-        "type": "piechart",
-        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 16},
-        "targets": [
-          {
-            "expr": "stratavore_runners_total",
-            "legendFormat": "{{status}}",
-            "refId": "A"
-          }
+        "id": 10, "type": "timeseries", "title": "Runner Count by Status",
+        "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 },
+        "datasource": { "type": "prometheus", "uid": "$datasource" },
+        "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "multi" }},
+        "fieldConfig": { "defaults": { "unit": "short", "custom": { "lineWidth": 2, "fillOpacity": 15 }}},
+        "targets": [{ "expr": "sum by (status) (stratavore_runners_total)", "legendFormat": "{{status}}", "refId": "A" }]
+      },
+      {
+        "id": 11, "type": "timeseries", "title": "Token Usage Rate (per minute)",
+        "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 },
+        "datasource": { "type": "prometheus", "uid": "$datasource" },
+        "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "multi" }},
+        "fieldConfig": { "defaults": { "unit": "short", "custom": { "lineWidth": 2, "fillOpacity": 10 }}},
+        "targets": [{ "expr": "sum by (scope) (rate(stratavore_tokens_used_total[1m]) * 60)", "legendFormat": "{{scope}}", "refId": "A" }]
+      },
+      {
+        "id": 20, "type": "timeseries", "title": "Runners by Project",
+        "gridPos": { "h": 8, "w": 12, "x": 0, "y": 12 },
+        "datasource": { "type": "prometheus", "uid": "$datasource" },
+        "options": { "legend": { "displayMode": "table", "placement": "right" }, "tooltip": { "mode": "multi" }},
+        "fieldConfig": { "defaults": { "unit": "short", "custom": { "lineWidth": 2, "fillOpacity": 8 }}},
+        "targets": [{ "expr": "stratavore_runners_by_project{project=~\"$project\"}", "legendFormat": "{{project}}", "refId": "A" }]
+      },
+      {
+        "id": 21, "type": "timeseries", "title": "Heartbeat Latency",
+        "gridPos": { "h": 8, "w": 12, "x": 12, "y": 12 },
+        "datasource": { "type": "prometheus", "uid": "$datasource" },
+        "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "single" }},
+        "fieldConfig": { "defaults": { "unit": "s", "custom": { "lineWidth": 2 },
+          "thresholds": { "mode": "absolute", "steps": [
+            {"color":"green","value":null}, {"color":"yellow","value":0.1}, {"color":"red","value":0.5}
+          ]}
+        }},
+        "targets": [{ "expr": "stratavore_heartbeat_latency_seconds", "legendFormat": "Latency", "refId": "A" }]
+      },
+      {
+        "id": 30, "type": "piechart", "title": "Runner Status Distribution",
+        "gridPos": { "h": 8, "w": 8, "x": 0, "y": 20 },
+        "datasource": { "type": "prometheus", "uid": "$datasource" },
+        "options": { "pieType": "donut", "legend": { "displayMode": "list", "placement": "right" }},
+        "targets": [{ "expr": "sum by (status) (stratavore_runners_total)", "legendFormat": "{{status}}", "refId": "A" }]
+      },
+      {
+        "id": 31, "type": "table", "title": "Project Summary",
+        "gridPos": { "h": 8, "w": 16, "x": 8, "y": 20 },
+        "datasource": { "type": "prometheus", "uid": "$datasource" },
+        "options": { "sortBy": [{ "desc": true, "displayName": "Runners" }], "footer": { "show": false }},
+        "fieldConfig": {
+          "defaults": { "unit": "short" },
+          "overrides": [
+            { "matcher": { "id": "byName", "options": "project" },
+              "properties": [{ "id": "displayName", "value": "Project" }, { "id": "custom.width", "value": 200 }] },
+            { "matcher": { "id": "byName", "options": "Value" },
+              "properties": [{ "id": "displayName", "value": "Runners" }] }
+          ]
+        },
+        "targets": [{ "expr": "stratavore_runners_by_project", "legendFormat": "{{project}}", "refId": "A", "instant": true }],
+        "transformations": [
+          { "id": "labelsToFields", "options": {} },
+          { "id": "organize", "options": { "excludeByName": { "Time": true, "__name__": true }}}
         ]
       }
     ]
-  }
+  },
+  "overwrite": true
 }
