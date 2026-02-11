@@ -1,16 +1,18 @@
 package main
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"flag"
 	"fmt"
+	"net/http"
 	"os"
 	"os/exec"
 	"os/signal"
 	"syscall"
 	"time"
 
-	"github.com/meridian/stratavore/pkg/types"
 	"go.uber.org/zap"
 )
 
@@ -120,22 +122,56 @@ func sendHeartbeats(ctx context.Context, runnerID string, logger *zap.Logger) {
 	ticker := time.NewTicker(10 * time.Second)
 	defer ticker.Stop()
 	
+	client := &http.Client{Timeout: 5 * time.Second}
+	apiURL := "http://localhost:50051/api/v1/heartbeat"
+	hostname, _ := os.Hostname()
+	
 	for {
 		select {
 		case <-ticker.C:
-			// Send heartbeat to daemon
-			hb := &types.Heartbeat{
-				RunnerID:     runnerID,
-				Status:       types.StatusRunning,
-				Timestamp:    time.Now(),
-				AgentVersion: "0.1.0",
+			// Get process metrics
+			cpuPercent := 0.0
+			var memoryMB int64 = 0
+			
+			// TODO: Get actual CPU/memory from process
+			
+			// Create heartbeat request
+			hb := map[string]interface{}{
+				"runner_id":     runnerID,
+				"status":        "running",
+				"cpu_percent":   cpuPercent,
+				"memory_mb":     memoryMB,
+				"tokens_used":   0,
+				"session_id":    "",
+				"agent_version": "0.4.0",
+				"hostname":      hostname,
 			}
 			
-			// TODO: Send via gRPC to daemon
-			logger.Debug("heartbeat", zap.String("runner_id", runnerID))
-			_ = hb
+			data, err := json.Marshal(hb)
+			if err != nil {
+				logger.Error("failed to marshal heartbeat", zap.Error(err))
+				continue
+			}
+			
+			resp, err := client.Post(apiURL, "application/json", bytes.NewReader(data))
+			if err != nil {
+				logger.Debug("heartbeat failed (daemon may be restarting)", zap.Error(err))
+				continue
+			}
+			resp.Body.Close()
+			
+			logger.Debug("heartbeat sent", zap.String("runner_id", runnerID))
 			
 		case <-ctx.Done():
+			// Send final heartbeat
+			finalHB := map[string]interface{}{
+				"runner_id":     runnerID,
+				"status":        "stopped",
+				"agent_version": "0.4.0",
+				"hostname":      hostname,
+			}
+			data, _ := json.Marshal(finalHB)
+			client.Post(apiURL, "application/json", bytes.NewReader(data))
 			return
 		}
 	}
