@@ -4,12 +4,18 @@
 $ErrorActionPreference = "Stop"
 
 Write-Host "========================================"  -ForegroundColor Cyan
-Write-Host "Stratavore v1.3 Windows Build" -ForegroundColor Cyan
+Write-Host "Stratavore v1.4.0 Windows Build" -ForegroundColor Cyan
 Write-Host "=======================================" -ForegroundColor Cyan
 Write-Host ""
 
-# Set version info
-$VERSION = "1.3.0"
+# Set version info (reads from VERSION file unless already set in environment)
+if ($env:VERSION) {
+    $VERSION = $env:VERSION
+} elseif (Test-Path "VERSION") {
+    $VERSION = (Get-Content "VERSION" -Raw).Trim()
+} else {
+    $VERSION = "dev"
+}
 $BUILD_TIME = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
 $COMMIT = "windows-build"
 

@@ -114,12 +114,20 @@ type ObservabilityConfig struct {
 
 // SecurityConfig for authentication and encryption
 type SecurityConfig struct {
-	EnableMTLS      bool   `mapstructure:"enable_mtls"`
-	CertFile        string `mapstructure:"cert_file"`
-	KeyFile         string `mapstructure:"key_file"`
-	CAFile          string `mapstructure:"ca_file"`
-	TokenSecretPath string `mapstructure:"token_secret_path"`
-	JoinTokenTTL    int    `mapstructure:"join_token_ttl_seconds"`
+	EnableMTLS      bool            `mapstructure:"enable_mtls"`
+	CertFile        string          `mapstructure:"cert_file"`
+	KeyFile         string          `mapstructure:"key_file"`
+	CAFile          string          `mapstructure:"ca_file"`
+	TokenSecretPath string          `mapstructure:"token_secret_path"`
+	JoinTokenTTL    int             `mapstructure:"join_token_ttl_seconds"`
+	AuthSecret      string          `mapstructure:"auth_secret"`
+	RateLimit       RateLimitConfig `mapstructure:"rate_limit"`
+}
+
+// RateLimitConfig controls per-client request throttling
+type RateLimitConfig struct {
+	RequestsPerMinute int `mapstructure:"requests_per_minute"`
+	Burst             int `mapstructure:"burst"`
 }
 
 // LoadConfig loads configuration from file and environment
@@ -223,6 +231,9 @@ func setDefaults(v *viper.Viper) {
 	// Security defaults
 	v.SetDefault("security.enable_mtls", false)
 	v.SetDefault("security.join_token_ttl_seconds", 300)
+	v.SetDefault("security.auth_secret", "") // empty = auth disabled
+	v.SetDefault("security.rate_limit.requests_per_minute", 300)
+	v.SetDefault("security.rate_limit.burst", 50)
 }
 
 // GetConnectionString returns PostgreSQL connection string

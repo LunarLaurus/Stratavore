@@ -82,17 +82,19 @@ def validate_agents():
             error_agents += 1
         
         # Check for recent thoughts (within last 10 minutes)
-        recent_thoughts = [
-            thought for thought in thoughts
-            if thought.get('timestamp'):
-                try:
-                    thought_time = time.strptime(thought['timestamp'], "%Y-%m-%dT%H:%M:%S")
-                    if time.time() - thought_time.timestamp() < 600:
-                        recent_thoughts.append(thought)
-                except (ValueError, TypeError):
-                    # Skip malformed timestamps
-                    pass
-        
+        recent_thoughts = []
+        for thought in thoughts:
+            ts = thought.get('timestamp')
+            if not ts:
+                continue
+            try:
+                thought_time = time.strptime(ts, "%Y-%m-%dT%H:%M:%S")
+                if time.time() - time.mktime(thought_time) < 600:
+                    recent_thoughts.append(thought)
+            except (ValueError, TypeError):
+                # Skip malformed timestamps
+                pass
+
         if recent_thoughts:
             print(f"  💭 Recent thoughts: {len(recent_thoughts)}")
             for thought in recent_thoughts[-3:]:  # Last 3 thoughts

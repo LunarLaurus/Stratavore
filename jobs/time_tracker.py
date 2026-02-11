@@ -77,14 +77,20 @@ class TimeTracker:
     
     def load_sessions(self) -> List[Dict]:
         """Load all sessions from file"""
+        sessions = []
         try:
             with open(self.sessions_file, 'r') as f:
-                content = f.read().strip()
-                if not content:
-                    return []
-                return [json.loads(line) for line in content.split('\n') if line]
+                for line in f:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    try:
+                        sessions.append(json.loads(line))
+                    except json.JSONDecodeError as exc:
+                        print(f"[WARN] Skipping malformed session line: {exc}")
         except FileNotFoundError:
-            return []
+            pass
+        return sessions
     
     def save_sessions(self, sessions: List[Dict]):
         """Save all sessions back to file"""

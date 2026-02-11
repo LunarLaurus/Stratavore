@@ -109,3 +109,13 @@ security:
   
   # Join token TTL (seconds)
   join_token_ttl_seconds: 300
+
+  # HTTP API authentication (JWT / X-API-Key)
+  # Leave empty to disable auth (default — safe for local deployments).
+  # Set via environment: STRATAVORE_SECURITY_AUTH_SECRET=your-secret
+  auth_secret: ""
+
+  # Per-client rate limiting on the HTTP API
+  rate_limit:
+    requests_per_minute: 300
+    burst: 50

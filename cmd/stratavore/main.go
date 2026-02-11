@@ -33,7 +33,7 @@ func getAPIClient() *client.Client {
 }
 
 var (
-	Version   = "1.3.1"
+	Version   = "1.4.0"
 	BuildTime = "unknown"
 	Commit    = "unknown"
 )
@@ -47,7 +47,14 @@ var (
 )
 
 func init() {
-	// Add flags
+	// Global flags
+	rootCmd.PersistentFlags().StringVar(&configFile, "config", "", "config file path")
+	rootCmd.PersistentFlags().StringVar(&flagsVar, "flags", "", "Claude Code flags")
+	rootCmd.PersistentFlags().BoolVar(&godMode, "god", false, "God mode (full access)")
+	rootCmd.PersistentFlags().StringVar(&preset, "preset", "", "Use preset configuration")
+	rootCmd.PersistentFlags().BoolVar(&grpc, "grpc", false, "Use gRPC client (default false)")
+
+	// Sub-command flags
 	newCmd.Flags().StringP("path", "p", "", "Project path (default: current directory)")
 	newCmd.Flags().StringP("description", "d", "", "Project description")
 
@@ -56,7 +63,7 @@ func init() {
 
 	killCmd.Flags().BoolP("force", "f", false, "Force kill (SIGKILL)")
 
-	// Register commands
+	// Register all sub-commands (each added once)
 	rootCmd.AddCommand(newCmd)
 	rootCmd.AddCommand(launchCmd)
 	rootCmd.AddCommand(statusCmd)
@@ -64,7 +71,9 @@ func init() {
 	rootCmd.AddCommand(runnersCmd)
 	rootCmd.AddCommand(projectsCmd)
 	rootCmd.AddCommand(watchCmd)
+	rootCmd.AddCommand(attachCmd)
 	rootCmd.AddCommand(daemonCmd)
+	rootCmd.AddCommand(completionCmd)
 }
 
 func main() {
@@ -81,24 +90,6 @@ var rootCmd = &cobra.Command{
 providing global state visibility, session resumption, and resource management.`,
 	Version: fmt.Sprintf("%s (built %s, commit %s)", Version, BuildTime, Commit),
 	Run:     rootHandler,
-}
-
-func init() {
-	// Global flags
-	rootCmd.PersistentFlags().StringVar(&configFile, "config", "", "config file path")
-	rootCmd.PersistentFlags().StringVar(&flagsVar, "flags", "", "Claude Code flags")
-	rootCmd.PersistentFlags().BoolVar(&godMode, "god", false, "God mode (full access)")
-	rootCmd.PersistentFlags().StringVar(&preset, "preset", "", "Use preset configuration")
-	rootCmd.PersistentFlags().BoolVar(&grpc, "grpc", false, "Use gRPC client (default false)")
-
-	// Add subcommands
-	rootCmd.AddCommand(statusCmd)
-	rootCmd.AddCommand(runnersCmd)
-	rootCmd.AddCommand(projectsCmd)
-	rootCmd.AddCommand(newCmd)
-	rootCmd.AddCommand(attachCmd)
-	rootCmd.AddCommand(killCmd)
-	rootCmd.AddCommand(daemonCmd)
 }
 
 func rootHandler(cmd *cobra.Command, args []string) {
@@ -499,6 +490,56 @@ var watchCmd = &cobra.Command{
 		} else {
 			// Watch all projects
 			monitor.Display(ctx)
+		}
+	},
+}
+
+var completionCmd = &cobra.Command{
+	Use:   "completion [bash|zsh|fish|powershell]",
+	Short: "Generate shell completion scripts",
+	Long: `Generate shell completion scripts for stratavore.
+
+Bash:
+  # Add to ~/.bashrc or ~/.bash_profile:
+  source <(stratavore completion bash)
+
+  # Or write to a file and source from profile:
+  stratavore completion bash > ~/.stratavore-completion.bash
+  echo 'source ~/.stratavore-completion.bash' >> ~/.bashrc
+
+Zsh:
+  # Add to ~/.zshrc (ensure compinit is enabled):
+  source <(stratavore completion zsh)
+
+  # Or with oh-my-zsh:
+  stratavore completion zsh > "${fpath[1]}/_stratavore"
+
+Fish:
+  stratavore completion fish > ~/.config/fish/completions/stratavore.fish
+
+PowerShell:
+  stratavore completion powershell | Out-String | Invoke-Expression
+`,
+	ValidArgs: []string{"bash", "zsh", "fish", "powershell"},
+	Args:      cobra.ExactArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		var err error
+		switch args[0] {
+		case "bash":
+			err = rootCmd.GenBashCompletion(os.Stdout)
+		case "zsh":
+			err = rootCmd.GenZshCompletion(os.Stdout)
+		case "fish":
+			err = rootCmd.GenFishCompletion(os.Stdout, true)
+		case "powershell":
+			err = rootCmd.GenPowerShellCompletionWithDesc(os.Stdout)
+		default:
+			fmt.Fprintf(os.Stderr, "Unsupported shell: %s\n", args[0])
+			os.Exit(1)
+		}
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error generating completion: %v\n", err)
+			os.Exit(1)
 		}
 	},
 }

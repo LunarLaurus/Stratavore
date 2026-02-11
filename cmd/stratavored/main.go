@@ -19,7 +19,7 @@ import (
 )
 
 var (
-	Version   = "1.3.0"
+	Version   = "1.4.0"
 	BuildTime = "unknown"
 	Commit    = "unknown"
 )
@@ -119,7 +119,7 @@ func run() error {
 	apiHandler := daemon.NewGRPCServer(runnerMgr, db, logger, cfg.Daemon.Port_GRPC)
 
 	// Start HTTP API server
-	httpServer := daemon.NewHTTPServer(cfg.Daemon.Port_HTTP, apiHandler, logger)
+	httpServer := daemon.NewHTTPServer(cfg.Daemon.Port_HTTP, apiHandler, logger, &cfg.Security)
 	go func() {
 		if err := httpServer.Start(); err != nil {
 			logger.Error("HTTP API server error", zap.Error(err))

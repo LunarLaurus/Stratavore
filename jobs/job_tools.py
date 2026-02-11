@@ -12,12 +12,20 @@ from typing import Dict, List, Set
 
 def load_jobs() -> List[Dict]:
     """Load all jobs from JSONL file"""
+    jobs = []
     try:
         with open('jobs/jobs.jsonl', 'r') as f:
-            return [json.loads(line) for line in f.read().strip().split('\n') if line]
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    jobs.append(json.loads(line))
+                except json.JSONDecodeError as exc:
+                    print(f"[WARN] Skipping malformed job line: {exc}")
     except FileNotFoundError:
         print("❌ jobs.jsonl not found")
-        return []
+    return jobs
 
 def validate_dependencies() -> bool:
     """Validate job dependencies and check for circular dependencies"""
@@ -146,7 +154,7 @@ def suggest_next_jobs() -> List[Dict]:
     
     # Sort by priority, then by creation date
     priority_order = {'high': 0, 'medium': 1, 'low': 2}
-    ready_jobs.sort(key=lambda j: (priority_order.get(j['priority'], 3), j['created_at']))
+    ready_jobs.sort(key=lambda j: (priority_order.get(j.get('priority', 'low'), 3), j.get('created_at') or ''))
     
     return ready_jobs
 

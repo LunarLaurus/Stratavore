@@ -13,6 +13,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/meridian-lex/stratavore/internal/procmetrics"
 	"go.uber.org/zap"
 )
 
@@ -121,20 +122,35 @@ func main() {
 func sendHeartbeats(ctx context.Context, runnerID string, logger *zap.Logger) {
 	ticker := time.NewTicker(10 * time.Second)
 	defer ticker.Stop()
-	
+
 	client := &http.Client{Timeout: 5 * time.Second}
 	apiURL := "http://localhost:50051/api/v1/heartbeat"
 	hostname, _ := os.Hostname()
-	
+
+	// pid is not known yet at startup; we'll discover it lazily.
+	// The process sampler is initialised once we know the PID.
+	var sampler *procmetrics.Sampler
+
 	for {
 		select {
 		case <-ticker.C:
-			// Get process metrics
+			// Collect CPU / memory for the current process (the agent itself).
+			// If the agent is wrapping a claude subprocess, callers can pass the
+			// child PID via the --pid flag in a future enhancement; for now we
+			// report the agent's own resource usage which is a reasonable proxy.
 			cpuPercent := 0.0
-			var memoryMB int64 = 0
-			
-			// TODO: Get actual CPU/memory from process
-			
+			var memoryMB int64
+
+			if sampler == nil {
+				sampler = procmetrics.NewSampler(os.Getpid())
+			}
+			if s, err := sampler.Sample(); err == nil {
+				cpuPercent = s.CPUPercent
+				memoryMB = s.MemoryMB
+			} else {
+				logger.Debug("procmetrics sample failed", zap.Error(err))
+			}
+
 			// Create heartbeat request
 			hb := map[string]interface{}{
 				"runner_id":     runnerID,
@@ -143,31 +159,34 @@ func sendHeartbeats(ctx context.Context, runnerID string, logger *zap.Logger) {
 				"memory_mb":     memoryMB,
 				"tokens_used":   0,
 				"session_id":    "",
-				"agent_version": "0.4.0",
+				"agent_version": "1.4.0",
 				"hostname":      hostname,
 			}
-			
+
 			data, err := json.Marshal(hb)
 			if err != nil {
 				logger.Error("failed to marshal heartbeat", zap.Error(err))
 				continue
 			}
-			
+
 			resp, err := client.Post(apiURL, "application/json", bytes.NewReader(data))
 			if err != nil {
 				logger.Debug("heartbeat failed (daemon may be restarting)", zap.Error(err))
 				continue
 			}
 			resp.Body.Close()
-			
-			logger.Debug("heartbeat sent", zap.String("runner_id", runnerID))
-			
+
+			logger.Debug("heartbeat sent",
+				zap.String("runner_id", runnerID),
+				zap.Float64("cpu_pct", cpuPercent),
+				zap.Int64("mem_mb", memoryMB))
+
 		case <-ctx.Done():
 			// Send final heartbeat
 			finalHB := map[string]interface{}{
 				"runner_id":     runnerID,
 				"status":        "stopped",
-				"agent_version": "0.4.0",
+				"agent_version": "1.4.0",
 				"hostname":      hostname,
 			}
 			data, _ := json.Marshal(finalHB)

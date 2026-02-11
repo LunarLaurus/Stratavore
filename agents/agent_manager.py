@@ -36,6 +36,7 @@ class AgentManager:
         self.personalities_file = "agents/agent_personalities.json"
         self.commands_file = "agents/agent_commands.jsonl"
         self.todos_file = "agents/agent_todos.jsonl"
+        self._lock = threading.Lock()  # Protects concurrent file writes
         self.ensure_files_exist()
         self.agents = {}
         self.load_agent_data()
@@ -181,13 +182,13 @@ class AgentManager:
         return agent_id
     
     def save_agent(self, agent_id: str, agent_data: Dict):
-        """Save agent data to file"""
-        self.agents[agent_id] = agent_data
-        
-        # Save to JSONL file
-        with open(self.agents_file, 'w') as f:
-            for aid, data in self.agents.items():
-                f.write(f"{aid} {json.dumps(data)}\n")
+        """Save agent data to file (thread-safe)."""
+        with self._lock:
+            self.agents[agent_id] = agent_data
+            # Write atomically: build full content then replace file
+            lines = [f"{aid} {json.dumps(data)}\n" for aid, data in self.agents.items()]
+            with open(self.agents_file, 'w') as f:
+                f.writelines(lines)
     
     def assign_task(self, agent_id: str, task_id: str) -> bool:
         """Assign a task to an agent"""
@@ -328,10 +329,16 @@ class AgentManager:
         todos = {}
         try:
             with open(self.todos_file, 'r') as f:
-                content = f.read().strip()
-                if content:
-                    todos = {line.split(' ', 1)[0]: json.loads(line.split(' ', 1)[1]) 
-                           for line in content.split('\n') if line.strip()}
+                for line in f:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    parts = line.split(' ', 1)
+                    if len(parts) == 2:
+                        try:
+                            todos[parts[0]] = json.loads(parts[1])
+                        except json.JSONDecodeError:
+                            pass
         except FileNotFoundError:
             return
         
@@ -343,6 +350,8 @@ class AgentManager:
         todo["status"] = status
         todo["updated_at"] = datetime.now().isoformat()
         if notes:
+            if "metadata" not in todo:
+                todo["metadata"] = {}
             todo["metadata"]["completion_notes"] = notes
         
         # Save back to file
@@ -355,14 +364,19 @@ class AgentManager:
         todos = []
         try:
             with open(self.todos_file, 'r') as f:
-                content = f.read().strip()
-                if content:
-                    for line in content.split('\n'):
-                        if line.strip():
-                            todo_id, todo_data = line.split(' ', 1)
-                            todo = json.loads(todo_data)
-                            if agent_id is None or todo.get("agent_id") == agent_id:
-                                todos.append(todo)
+                for line in f:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    parts = line.split(' ', 1)
+                    if len(parts) != 2:
+                        continue
+                    try:
+                        todo = json.loads(parts[1])
+                        if agent_id is None or todo.get("agent_id") == agent_id:
+                            todos.append(todo)
+                    except json.JSONDecodeError:
+                        pass
         except FileNotFoundError:
             pass
         
@@ -582,7 +596,7 @@ def main():
             print(f"❌ Failed to assign task")
     
     elif command == "status":
-        if len(sys.argv) < 3:
+        if len(sys.argv) < 4:
             print("Usage: python3 agent_manager.py status <agent_id> <status> [thought]")
             return
         

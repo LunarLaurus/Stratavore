@@ -7,7 +7,9 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/meridian-lex/stratavore/internal/auth"
 	"github.com/meridian-lex/stratavore/pkg/api"
+	"github.com/meridian-lex/stratavore/pkg/config"
 	"go.uber.org/zap"
 )
 
@@ -18,8 +20,10 @@ type HTTPServer struct {
 	logger  *zap.Logger
 }
 
-// NewHTTPServer creates HTTP API server
-func NewHTTPServer(port int, handler *GRPCServer, logger *zap.Logger) *HTTPServer {
+// NewHTTPServer creates HTTP API server.
+// It wires JWT auth and per-client rate limiting when the corresponding
+// config values are set; both default to disabled/permissive.
+func NewHTTPServer(port int, handler *GRPCServer, logger *zap.Logger, cfg *config.SecurityConfig) *HTTPServer {
 	mux := http.NewServeMux()
 
 	httpServer := &HTTPServer{
@@ -39,9 +43,39 @@ func NewHTTPServer(port int, handler *GRPCServer, logger *zap.Logger) *HTTPServe
 	mux.HandleFunc("/api/v1/reconcile", httpServer.handleReconcile)
 	mux.HandleFunc("/api/v1/health", httpServer.handleHealth)
 
+	// Build middleware chain: rate-limit → JWT auth → mux
+	var handler_ http.Handler = mux
+
+	// JWT auth (disabled when auth_secret is empty)
+	if cfg != nil {
+		validator := auth.NewValidator(cfg.AuthSecret)
+		if validator.Enabled() {
+			logger.Info("HTTP API auth enabled")
+		} else {
+			logger.Info("HTTP API auth disabled (no auth_secret configured)")
+		}
+		handler_ = auth.Middleware(validator)(handler_)
+
+		// Rate limiting (always active; defaults to 300 req/min, burst 50)
+		ratePerMin := cfg.RateLimit.RequestsPerMinute
+		if ratePerMin <= 0 {
+			ratePerMin = 300
+		}
+		burst := cfg.RateLimit.Burst
+		if burst <= 0 {
+			burst = 50
+		}
+		rl := auth.NewRateLimiter(ratePerMin, time.Minute, burst)
+		handler_ = auth.RateLimitMiddleware(rl)(handler_)
+
+		logger.Info("HTTP API rate limiting enabled",
+			zap.Int("requests_per_minute", ratePerMin),
+			zap.Int("burst", burst))
+	}
+
 	httpServer.server = &http.Server{
 		Addr:         fmt.Sprintf(":%d", port),
-		Handler:      mux,
+		Handler:      handler_,
 		ReadTimeout:  30 * time.Second,
 		WriteTimeout: 30 * time.Second,
 	}

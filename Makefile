@@ -1,11 +1,14 @@
-# Stratavore Makefile v1.3
+# Stratavore Makefile
+# Version is the single source of truth in VERSION file.
+# Override at build time: make VERSION=1.5.0 build
+# Bump everywhere at once: make bump-version V=1.5.0
 
-.PHONY: all build install clean test lint migration-up migration-down docker-setup proto help
+.PHONY: all build install clean test lint migration-up migration-down docker-setup proto bump-version help
 
 BINARY_NAME=stratavore
 DAEMON_NAME=stratavored
 AGENT_NAME=stratavore-agent
-VERSION?=1.3.0
+VERSION?=$(shell cat VERSION 2>/dev/null | tr -d '[:space:]' || echo "dev")
 BUILD_TIME=$(shell date -u '+%Y-%m-%d_%H:%M:%S')
 COMMIT=$(shell git rev-parse --short HEAD 2>/dev/null || echo "dev")
 LDFLAGS=-ldflags "-X main.Version=${VERSION} -X main.BuildTime=${BUILD_TIME} -X main.Commit=${COMMIT}"
@@ -123,6 +126,11 @@ docker-up-grpc:
 docker-proto-shell:
 	docker compose -f docker-compose.builder.yml run --rm proto-dev
 
+# Bump version across all files. Usage: make bump-version V=1.5.0
+bump-version:
+	@if [ -z "$(V)" ]; then echo "Usage: make bump-version V=x.y.z" >&2; exit 1; fi
+	@bash scripts/bump-version.sh $(V)
+
 systemd-install:
 	@echo "Installing systemd service..."
 	sudo cp deployments/systemd/stratavored.service /etc/systemd/system/
@@ -162,6 +170,7 @@ help:
 	@echo "  lint                 - Run linters"
 	@echo "  migration-up         - Apply database migrations"
 	@echo "  migration-down       - Rollback database migrations"
+	@echo "  bump-version         - Bump version everywhere: make bump-version V=1.5.0"
 	@echo "  docker-setup         - Configure Docker integration (infra only)"
 	@echo "  docker-build-proto   - Build protobuf-capable image, export bins to ./dist"
 	@echo "  docker-up-grpc       - Start full stack with gRPC daemon (Compose)"

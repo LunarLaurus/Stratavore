@@ -1,16 +1,19 @@
 @echo off
-REM Stratavore Windows Build Script v1.3
-REM Builds all binaries with optional protobuf generation
+REM Stratavore Windows Build Script
+REM Version is read from VERSION file; override with: set VERSION=x.y.z && build.bat
 
 setlocal enabledelayedexpansion
 
 echo ========================================
-echo Stratavore v1.3 Windows Build
+echo Stratavore v1.4.0 Windows Build
 echo ========================================
 echo.
 
-REM Set version info
-set VERSION=1.3.1
+REM Set version info (reads from VERSION file unless already set in environment)
+if not defined VERSION (
+    set /p VERSION=<VERSION
+)
+if not defined VERSION set VERSION=dev
 set BUILD_TIME=%date% %time%
 set COMMIT=windows-build
 

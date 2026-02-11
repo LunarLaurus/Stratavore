@@ -1,7 +1,7 @@
 # Stratavore TODO - Remaining Features & Improvements
 
-**Last Updated:** February 10, 2026  
-**Current Version:** v1.0 (95% complete)  
+**Last Updated:** February 11, 2026  
+**Current Version:** v1.4.0 (98% complete)  
 **Target Version:** v2.0 (100%)
 
 ---
@@ -38,12 +38,14 @@
 **Impact:** HIGH - Validates production readiness
 
 **Tasks:**
-- [ ] Create load test scenarios
-- [ ] Test 100 concurrent launches
-- [ ] Test 1000 active runners
-- [ ] Test 10k events/second
+- [x] Create load test scenarios (`test/load/scenarios_test.go`)
+- [x] Test 100 concurrent launches — `TestConcurrentLaunches`
+- [x] Test heartbeat throughput — `TestHeartbeatThroughput`
+- [x] Test status under load — `TestStatusUnderLoad`
+- [x] Mixed workload scenario — `TestMixedWorkload`
+- [ ] Test 1000 active runners (requires live daemon)
+- [ ] Test 10k events/second (requires live daemon)
 - [ ] Measure database connection pool
-- [ ] Test heartbeat system under load
 - [ ] Profile memory usage
 - [ ] Profile CPU usage
 - [ ] Document bottlenecks
@@ -64,10 +66,10 @@
 **Tasks:**
 - [x] Implement API authentication (JWT/API keys) — `internal/auth/jwt.go`
 - [x] Add rate limiting per client — `internal/auth/ratelimit.go`
-- [ ] Wire auth middleware into HTTP server (`internal/daemon/http_server.go`)
+- [x] Wire auth middleware into HTTP server (`internal/daemon/http_server.go`)
 - [ ] Enable mTLS for internal communication
 - [ ] Implement agent token validation
-- [ ] Add request signing (HMAC)
+- [x] Add request signing (HMAC) — `internal/auth/hmac.go`
 - [ ] SQL injection prevention audit
 - [ ] Input sanitization review
 - [ ] Secrets management (Vault integration)
@@ -76,7 +78,7 @@
 **Files to create:**
 - ✅ `internal/auth/jwt.go`
 - ✅ `internal/auth/ratelimit.go`
-- [ ] `internal/auth/hmac.go`
+- ✅ `internal/auth/hmac.go`
 - [ ] `docs/SECURITY.md`
 
 ---
@@ -234,7 +236,7 @@
 ## 🐛 Bug Fixes & Improvements
 
 ### 12. Known Issues
-- [ ] Agent doesn't collect actual CPU/memory from process (uses placeholder)
+- [x] Agent collects real CPU/memory via `internal/procmetrics` (Linux `/proc`, macOS `ps`)
 - [ ] Session transcript download not implemented
 - [ ] No actual Claude Code token parsing
 - [ ] Missing cleanup on daemon crash recovery
@@ -267,9 +269,9 @@
 ### Priority Quick Wins
 1. ✅ **Redis Caching** - 2 hours, 10x speedup
 2. ✅ **Grafana Dashboards** - 1 hour, immediate visibility
-3. ⏳ **CLI autocomplete** - 30 min, better UX
+3. ✅ **CLI autocomplete** - bash/zsh/fish/powershell via `stratavore completion`
 4. ⏳ **API documentation** - 1 hour, better developer experience
-5. ⏳ **Process metrics collection** - 30 min, accurate monitoring
+5. ✅ **Process metrics collection** - real CPU/memory via `/proc` + `ps` fallback
 
 ---
 
