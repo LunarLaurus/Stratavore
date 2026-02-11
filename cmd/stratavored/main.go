@@ -115,6 +115,17 @@ func run() error {
 	// Create runner manager
 	runnerMgr := daemon.NewRunnerManager(db, mqClient, logger)
 	
+	// Create API handler
+	apiHandler := daemon.NewGRPCServer(runnerMgr, db, logger)
+	
+	// Start HTTP API server
+	httpServer := daemon.NewHTTPServer(cfg.Daemon.GRPCPort, apiHandler, logger)
+	go func() {
+		if err := httpServer.Start(); err != nil {
+			logger.Error("HTTP API server error", zap.Error(err))
+		}
+	}()
+	
 	// Start outbox publisher
 	outboxPublisher := messaging.NewOutboxPublisher(
 		db,
@@ -175,8 +186,8 @@ func run() error {
 	
 	logger.Info("shutting down daemon...")
 	
-	// Stop gRPC server
-	grpcServer.Stop()
+	// Stop HTTP server
+	httpServer.Stop(shutdownCtx)
 	
 	// Stop metrics server
 	if metricsServer != nil {

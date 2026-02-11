@@ -9,10 +9,18 @@ import (
 
 	"github.com/meridian/stratavore/internal/storage"
 	"github.com/meridian/stratavore/internal/ui"
+	"github.com/meridian/stratavore/pkg/api"
+	"github.com/meridian/stratavore/pkg/client"
 	"github.com/meridian/stratavore/pkg/config"
 	"github.com/meridian/stratavore/pkg/types"
 	"github.com/spf13/cobra"
 )
+
+// getAPIClient creates configured API client
+func getAPIClient() *client.Client {
+	cfg, _ := config.LoadConfig()
+	return client.NewClient("localhost", cfg.Daemon.GRPCPort)
+}
 
 var (
 	Version   = "dev"
@@ -26,6 +34,27 @@ var (
 	preset     string
 	configFile string
 )
+
+func init() {
+	// Add flags
+	newCmd.Flags().StringP("path", "p", "", "Project path (default: current directory)")
+	newCmd.Flags().StringP("description", "d", "", "Project description")
+	
+	launchCmd.Flags().StringSliceP("flag", "f", nil, "Claude Code flags")
+	launchCmd.Flags().StringSliceP("capability", "c", nil, "Capabilities to enable")
+	
+	killCmd.Flags().BoolP("force", "f", false, "Force kill (SIGKILL)")
+	
+	// Register commands
+	rootCmd.AddCommand(newCmd)
+	rootCmd.AddCommand(launchCmd)
+	rootCmd.AddCommand(statusCmd)
+	rootCmd.AddCommand(killCmd)
+	rootCmd.AddCommand(runnersCmd)
+	rootCmd.AddCommand(projectsCmd)
+	rootCmd.AddCommand(watchCmd)
+	rootCmd.AddCommand(daemonCmd)
+}
 
 func main() {
 	if err := rootCmd.Execute(); err != nil {
@@ -134,7 +163,157 @@ func launchNewRunner(ctx context.Context, db *storage.PostgresClient, projectNam
 	}
 }
 
+var newCmd = &cobra.Command{
+	Use:   "new <project-name>",
+	Short: "Create a new project",
+	Args:  cobra.ExactArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		apiClient := getAPIClient()
+		ctx := context.Background()
+
+		projectPath, _ := cmd.Flags().GetString("path")
+		description, _ := cmd.Flags().GetString("description")
+
+		if projectPath == "" {
+			cwd, _ := os.Getwd()
+			projectPath = cwd
+		}
+
+		req := &api.CreateProjectRequest{
+			Name:        args[0],
+			Path:        projectPath,
+			Description: description,
+		}
+
+		resp, err := apiClient.CreateProject(ctx, req)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error creating project: %v\n", err)
+			os.Exit(1)
+		}
+
+		if resp.Error != "" {
+			fmt.Fprintf(os.Stderr, "Error: %s\n", resp.Error)
+			os.Exit(1)
+		}
+
+		fmt.Printf("✓ Project '%s' created at %s\n", resp.Project.Name, resp.Project.Path)
+	},
+}
+
+var launchCmd = &cobra.Command{
+	Use:   "launch <project-name>",
+	Short: "Launch a runner for a project",
+	Args:  cobra.ExactArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		apiClient := getAPIClient()
+		ctx := context.Background()
+
+		// Check if daemon is running
+		if err := apiClient.Ping(ctx); err != nil {
+			fmt.Fprintf(os.Stderr, "Error: Daemon not running. Start with: stratavored\n")
+			os.Exit(1)
+		}
+
+		projectName := args[0]
+		flags, _ := cmd.Flags().GetStringSlice("flag")
+		capabilities, _ := cmd.Flags().GetStringSlice("capability")
+
+		req := &api.LaunchRunnerRequest{
+			ProjectName:      projectName,
+			ProjectPath:      "", // Will be looked up from project
+			Flags:            flags,
+			Capabilities:     capabilities,
+			ConversationMode: "new",
+			RuntimeType:      "process",
+		}
+
+		fmt.Printf("🚀 Launching runner for project '%s'...\n", projectName)
+
+		resp, err := apiClient.LaunchRunner(ctx, req)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+			os.Exit(1)
+		}
+
+		if resp.Error != "" {
+			fmt.Fprintf(os.Stderr, "Error: %s\n", resp.Error)
+			os.Exit(1)
+		}
+
+		fmt.Printf("✓ Runner started: %s\n", resp.Runner.ID)
+		fmt.Printf("  Status: %s\n", resp.Runner.Status)
+		fmt.Printf("  Project: %s\n", resp.Runner.ProjectName)
+		fmt.Printf("\nUse 'stratavore watch %s' to monitor\n", projectName)
+	},
+}
+
 var statusCmd = &cobra.Command{
+	Use:   "status",
+	Short: "Show daemon and runner status",
+	Run: func(cmd *cobra.Command, args []string) {
+		apiClient := getAPIClient()
+		ctx := context.Background()
+
+		// Check daemon health
+		if err := apiClient.Ping(ctx); err != nil {
+			fmt.Fprintf(os.Stderr, "❌ Daemon: Not running\n")
+			fmt.Fprintf(os.Stderr, "   Start with: stratavored\n")
+			os.Exit(1)
+		}
+
+		// Get status
+		resp, err := apiClient.GetStatus(ctx)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+			os.Exit(1)
+		}
+
+		fmt.Println("═══════════════════════════════════════════")
+		fmt.Println("  STRATAVORE STATUS")
+		fmt.Println("═══════════════════════════════════════════")
+		fmt.Println()
+		fmt.Printf("Daemon:    %s\n", boolToStatus(resp.Daemon.Healthy))
+		fmt.Printf("Updated:   %s\n", resp.Daemon.LastHeartbeat)
+		fmt.Println()
+		fmt.Printf("Active Runners:  %d\n", resp.Metrics.ActiveRunners)
+		fmt.Printf("Active Projects: %d\n", resp.Metrics.ActiveProjects)
+		fmt.Printf("Total Sessions:  %d\n", resp.Metrics.TotalSessions)
+		fmt.Printf("Tokens Used:     %d\n", resp.Metrics.TokensUsed)
+	},
+}
+
+var killCmd = &cobra.Command{
+	Use:   "kill <runner-id>",
+	Short: "Stop a running runner",
+	Args:  cobra.ExactArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		apiClient := getAPIClient()
+		ctx := context.Background()
+
+		runnerID := args[0]
+		force, _ := cmd.Flags().GetBool("force")
+
+		resp, err := apiClient.StopRunner(ctx, runnerID, force)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+			os.Exit(1)
+		}
+
+		if resp.Error != "" {
+			fmt.Fprintf(os.Stderr, "Error: %s\n", resp.Error)
+			os.Exit(1)
+		}
+
+		if resp.Success {
+			fmt.Printf("✓ Runner %s stopped\n", runnerID)
+		} else {
+			fmt.Fprintf(os.Stderr, "Failed to stop runner\n")
+			os.Exit(1)
+		}
+	},
+}
+
+var runnersCmd = &cobra.Command{
 	Use:   "status",
 	Short: "Show global dashboard",
 	Run: func(cmd *cobra.Command, args []string) {
@@ -167,6 +346,53 @@ var runnersCmd = &cobra.Command{
 		// Get all active runners (would need to add this query)
 		fmt.Println("=== Active Runners ===")
 		fmt.Println("(Query implementation TODO)")
+	},
+}
+
+var runnersCmd = &cobra.Command{
+	Use:   "runners [project]",
+	Short: "List active runners",
+	Run: func(cmd *cobra.Command, args []string) {
+		apiClient := getAPIClient()
+		ctx := context.Background()
+
+		projectName := ""
+		if len(args) > 0 {
+			projectName = args[0]
+		}
+
+		resp, err := apiClient.ListRunners(ctx, projectName)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+			os.Exit(1)
+		}
+
+		if resp.Error != "" {
+			fmt.Fprintf(os.Stderr, "Error: %s\n", resp.Error)
+			os.Exit(1)
+		}
+
+		if len(resp.Runners) == 0 {
+			fmt.Println("No active runners")
+			return
+		}
+
+		fmt.Printf("Active Runners (%d):\n\n", resp.Total)
+		fmt.Println("ID        PROJECT              STATUS    UPTIME     CPU%   MEM(MB)")
+		fmt.Println("─────────────────────────────────────────────────────────────────────")
+
+		for _, r := range resp.Runners {
+			startTime, _ := api.ParseTime(r.StartedAt)
+			uptime := formatDuration(time.Since(startTime))
+			
+			fmt.Printf("%-8s  %-20s %-9s %-10s %5.1f  %7d\n",
+				r.ID[:8],
+				truncate(r.ProjectName, 20),
+				r.Status,
+				uptime,
+				r.CPUPercent,
+				r.MemoryMB)
+		}
 	},
 }
 
@@ -258,6 +484,86 @@ var killCmd = &cobra.Command{
 		fmt.Printf("Stopping runner: %s\n", runnerID)
 		fmt.Println("(Would communicate with daemon via gRPC)")
 	},
+}
+
+var projectsCmd = &cobra.Command{
+	Use:   "projects",
+	Short: "List all projects",
+	Run: func(cmd *cobra.Command, args []string) {
+		apiClient := getAPIClient()
+		ctx := context.Background()
+
+		resp, err := apiClient.ListProjects(ctx, "")
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+			os.Exit(1)
+		}
+
+		if resp.Error != "" {
+			fmt.Fprintf(os.Stderr, "Error: %s\n", resp.Error)
+			os.Exit(1)
+		}
+
+		if len(resp.Projects) == 0 {
+			fmt.Println("No projects found")
+			fmt.Println("Create one with: stratavore new <project-name>")
+			return
+		}
+
+		fmt.Printf("Projects (%d):\n\n", len(resp.Projects))
+		fmt.Println("NAME                 STATUS    RUNNERS  SESSIONS  TOKENS")
+		fmt.Println("──────────────────────────────────────────────────────────")
+
+		for _, p := range resp.Projects {
+			fmt.Printf("%-20s %-9s %2d       %4d      %s\n",
+				truncate(p.Name, 20),
+				p.Status,
+				p.ActiveRunners,
+				p.TotalSessions,
+				formatNumber(p.TotalTokens))
+		}
+	},
+}
+
+// Helper functions
+
+func boolToStatus(b bool) string {
+	if b {
+		return "✓ Running"
+	}
+	return "✗ Stopped"
+}
+
+func formatDuration(d time.Duration) string {
+	d = d.Round(time.Second)
+	h := d / time.Hour
+	d -= h * time.Hour
+	m := d / time.Minute
+	d -= m * time.Minute
+	s := d / time.Second
+
+	if h > 0 {
+		return fmt.Sprintf("%dh%dm", h, m)
+	} else if m > 0 {
+		return fmt.Sprintf("%dm%ds", m, s)
+	}
+	return fmt.Sprintf("%ds", s)
+}
+
+func truncate(s string, max int) string {
+	if len(s) <= max {
+		return s
+	}
+	return s[:max-3] + "..."
+}
+
+func formatNumber(n int64) string {
+	if n < 1000 {
+		return fmt.Sprintf("%d", n)
+	} else if n < 1000000 {
+		return fmt.Sprintf("%.1fK", float64(n)/1000)
+	}
+	return fmt.Sprintf("%.1fM", float64(n)/1000000)
 }
 
 var watchCmd = &cobra.Command{
