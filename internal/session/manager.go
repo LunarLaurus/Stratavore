@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/meridian/stratavore/internal/storage"
-	"github.com/meridian/stratavore/pkg/types"
+	"github.com/meridian-lex/stratavore/internal/storage"
+	"github.com/meridian-lex/stratavore/pkg/types"
 	"go.uber.org/zap"
 )
 
@@ -111,8 +111,8 @@ func (m *Manager) ResumeSession(ctx context.Context, sessionID string) (*ResumeI
 
 	// Runner dead - need to start new runner with resume flag
 	return &ResumeInfo{
-		Session:      session,
-		RunnerActive: false,
+		Session:        session,
+		RunnerActive:   false,
 		NeedsNewRunner: true,
 	}, nil
 }

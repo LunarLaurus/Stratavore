@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/meridian/stratavore/internal/notifications"
-	"github.com/meridian/stratavore/internal/storage"
-	"github.com/meridian/stratavore/pkg/types"
+	"github.com/meridian-lex/stratavore/internal/notifications"
+	"github.com/meridian-lex/stratavore/internal/storage"
+	"github.com/meridian-lex/stratavore/pkg/types"
 	"go.uber.org/zap"
 )
 
@@ -173,10 +173,10 @@ func (m *Manager) GetBudgetStatus(ctx context.Context, scope, scopeID string) (*
 
 	if budget == nil {
 		return &BudgetStatus{
-			Scope:      scope,
-			ScopeID:    scopeID,
-			HasBudget:  false,
-			Unlimited:  true,
+			Scope:     scope,
+			ScopeID:   scopeID,
+			HasBudget: false,
+			Unlimited: true,
 		}, nil
 	}
 

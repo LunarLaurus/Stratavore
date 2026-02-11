@@ -8,9 +8,9 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/meridian/stratavore/internal/messaging"
-	"github.com/meridian/stratavore/internal/storage"
-	"github.com/meridian/stratavore/pkg/types"
+	"github.com/meridian-lex/stratavore/internal/messaging"
+	"github.com/meridian-lex/stratavore/internal/storage"
+	"github.com/meridian-lex/stratavore/pkg/types"
 	"go.uber.org/zap"
 )
 

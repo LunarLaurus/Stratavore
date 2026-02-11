@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package stratavore;
 
-option go_package = "github.com/meridian/stratavore/pkg/api";
+option go_package = "github.com/meridian-lex/stratavore/pkg/api";
 
 // StratavoreService provides the daemon API
 service StratavoreService {

@@ -7,11 +7,11 @@ import (
 	"os/signal"
 	"time"
 
-	"github.com/meridian/stratavore/internal/storage"
-	"github.com/meridian/stratavore/internal/ui"
-	"github.com/meridian/stratavore/pkg/api"
-	"github.com/meridian/stratavore/pkg/client"
-	"github.com/meridian/stratavore/pkg/config"
+	"github.com/meridian-lex/stratavore/internal/storage"
+	"github.com/meridian-lex/stratavore/internal/ui"
+	"github.com/meridian-lex/stratavore/pkg/api"
+	"github.com/meridian-lex/stratavore/pkg/client"
+	"github.com/meridian-lex/stratavore/pkg/config"
 	"github.com/spf13/cobra"
 )
 

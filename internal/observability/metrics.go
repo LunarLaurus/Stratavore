@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/meridian/stratavore/pkg/types"
+	"github.com/meridian-lex/stratavore/pkg/types"
 	"go.uber.org/zap"
 )
 
@@ -16,22 +16,22 @@ type MetricsServer struct {
 	server *http.Server
 
 	// Metrics state (would use prometheus client_golang in production)
-	mu              sync.RWMutex
-	runnersByStatus map[types.RunnerStatus]int
-	runnersByProject map[string]int
-	totalSessions   int
-	tokensUsed      int64
+	mu                 sync.RWMutex
+	runnersByStatus    map[types.RunnerStatus]int
+	runnersByProject   map[string]int
+	totalSessions      int
+	tokensUsed         int64
 	heartbeatLatencies []float64
-	daemonUptime    float64
+	daemonUptime       float64
 }
 
 // NewMetricsServer creates a new metrics server
 func NewMetricsServer(port int, logger *zap.Logger) *MetricsServer {
 	return &MetricsServer{
-		port:             port,
-		logger:           logger,
-		runnersByStatus:  make(map[types.RunnerStatus]int),
-		runnersByProject: make(map[string]int),
+		port:               port,
+		logger:             logger,
+		runnersByStatus:    make(map[types.RunnerStatus]int),
+		runnersByProject:   make(map[string]int),
 		heartbeatLatencies: []float64{},
 	}
 }

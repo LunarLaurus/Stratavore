@@ -9,7 +9,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/meridian/stratavore/pkg/api"
+	"github.com/meridian-lex/stratavore/pkg/api"
 )
 
 // Client communicates with stratavore daemon via HTTP API

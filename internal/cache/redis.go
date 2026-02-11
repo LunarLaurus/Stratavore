@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/go-redis/redis/v8"
-	"github.com/meridian/stratavore/pkg/types"
+	"github.com/meridian-lex/stratavore/pkg/types"
 	"go.uber.org/zap"
 )
 

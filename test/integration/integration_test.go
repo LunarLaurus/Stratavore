@@ -5,11 +5,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/meridian/stratavore/internal/storage"
-	"github.com/meridian/stratavore/pkg/api"
-	"github.com/meridian/stratavore/pkg/client"
-	"github.com/meridian/stratavore/pkg/config"
-	"github.com/meridian/stratavore/pkg/types"
+	"github.com/meridian-lex/stratavore/internal/storage"
+	"github.com/meridian-lex/stratavore/pkg/api"
+	"github.com/meridian-lex/stratavore/pkg/client"
+	"github.com/meridian-lex/stratavore/pkg/config"
+	"github.com/meridian-lex/stratavore/pkg/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

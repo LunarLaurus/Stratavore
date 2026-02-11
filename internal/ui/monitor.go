@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/meridian/stratavore/internal/storage"
-	"github.com/meridian/stratavore/pkg/types"
+	"github.com/meridian-lex/stratavore/internal/storage"
+	"github.com/meridian-lex/stratavore/pkg/types"
 )
 
 // LiveMonitor displays live runner status in terminal
@@ -86,7 +86,7 @@ func (m *LiveMonitor) renderStatus(ctx context.Context) {
 	for _, p := range projects {
 		statusIcon := getStatusIcon(p.Status)
 		name := truncate(p.Name, 20)
-		
+
 		fmt.Printf("  %-20s %s %-7s  %2d       %4d      %s\n",
 			name,
 			statusIcon,
@@ -189,7 +189,7 @@ func (m *LiveMonitor) renderRunners(ctx context.Context, projectName string) {
 		id := truncate(r.ID, 8)
 		project := truncate(r.ProjectName, 15)
 		uptime := formatDuration(time.Since(r.StartedAt))
-		
+
 		fmt.Printf("  %-8s  %-15s  %-8s  %-8s  %5.1f  %7d  %s\n",
 			id,
 			project,

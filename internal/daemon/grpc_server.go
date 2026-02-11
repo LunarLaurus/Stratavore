@@ -3,12 +3,14 @@ package daemon
 import (
 	"context"
 	"fmt"
+	"net"
 	"time"
 
-	"github.com/meridian/stratavore/internal/storage"
-	"github.com/meridian/stratavore/pkg/api"
-	"github.com/meridian/stratavore/pkg/types"
+	"github.com/meridian-lex/stratavore/internal/storage"
+	"github.com/meridian-lex/stratavore/pkg/api"
+	"github.com/meridian-lex/stratavore/pkg/types"
 	"go.uber.org/zap"
+	"google.golang.org/grpc"
 )
 
 // GRPCServer implements the Stratavore gRPC API
@@ -16,6 +18,8 @@ type GRPCServer struct {
 	runnerManager *RunnerManager
 	storage       *storage.PostgresClient
 	logger        *zap.Logger
+	server        *grpc.Server
+	port          int
 }
 
 // NewGRPCServer creates a new gRPC server
@@ -23,11 +27,39 @@ func NewGRPCServer(
 	runnerManager *RunnerManager,
 	storage *storage.PostgresClient,
 	logger *zap.Logger,
+	port int,
 ) *GRPCServer {
 	return &GRPCServer{
 		runnerManager: runnerManager,
 		storage:       storage,
 		logger:        logger,
+		port:          port,
+	}
+}
+
+func (s *GRPCServer) Start() error {
+	addr := fmt.Sprintf(":%d", s.port)
+	lis, err := net.Listen("tcp", addr)
+	if err != nil {
+		s.logger.Error("failed to listen on port", zap.Int("port", s.port), zap.Error(err))
+		return fmt.Errorf("failed to listen: %w", err)
+	}
+
+	s.server = grpc.NewServer()
+	// api.RegisterStratavoreServiceServer(s.server, s)
+
+	s.logger.Info("gRPC server starting", zap.String("address", addr))
+	if err := s.server.Serve(lis); err != nil {
+		s.logger.Error("gRPC server failed", zap.Error(err))
+		return fmt.Errorf("gRPC server failed: %w", err)
+	}
+	return nil
+}
+
+func (s *GRPCServer) Stop() {
+	if s.server != nil {
+		s.logger.Info("stopping gRPC server")
+		s.server.GracefulStop()
 	}
 }
 
@@ -311,4 +343,3 @@ func convertProjectToAPI(p *types.Project) *api.Project {
 
 	return apiProject
 }
-

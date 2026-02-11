@@ -8,18 +8,18 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/meridian/stratavore/internal/daemon"
-	"github.com/meridian/stratavore/internal/messaging"
-	"github.com/meridian/stratavore/internal/notifications"
-	"github.com/meridian/stratavore/internal/observability"
-	"github.com/meridian/stratavore/internal/storage"
-	"github.com/meridian/stratavore/pkg/config"
+	"github.com/meridian-lex/stratavore/internal/daemon"
+	"github.com/meridian-lex/stratavore/internal/messaging"
+	"github.com/meridian-lex/stratavore/internal/notifications"
+	"github.com/meridian-lex/stratavore/internal/observability"
+	"github.com/meridian-lex/stratavore/internal/storage"
+	"github.com/meridian-lex/stratavore/pkg/config"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
 
 var (
-	Version   = "dev"
+	Version   = "1.3.0"
 	BuildTime = "unknown"
 	Commit    = "unknown"
 )
@@ -116,7 +116,7 @@ func run() error {
 	runnerMgr := daemon.NewRunnerManager(db, mqClient, logger)
 
 	// Create API handler
-	apiHandler := daemon.NewGRPCServer(runnerMgr, db, logger)
+	apiHandler := daemon.NewGRPCServer(runnerMgr, db, logger, cfg.Daemon.GRPCPort)
 
 	// Start HTTP API server
 	httpServer := daemon.NewHTTPServer(cfg.Daemon.GRPCPort, apiHandler, logger)
@@ -154,10 +154,10 @@ func run() error {
 	}
 
 	// Start gRPC server
-	grpcServer := daemon.NewGRPCServer(runnerMgr, db, logger)
+	grpcServer := daemon.NewGRPCServer(runnerMgr, db, logger, cfg.Daemon.GRPCPort)
 	go func() {
 		if err := grpcServer.Start(); err != nil {
-			logger.Error("gRPC server error", zap.Error(err.(error)))
+			logger.Error("gRPC server error", zap.Error(err))
 		}
 	}()
 
