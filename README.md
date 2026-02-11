@@ -175,6 +175,31 @@ Prometheus metrics are exposed on port 9091 (configurable):
 - `stratavore_tokens_used_total{scope="global|project|runner"}`
 - `stratavore_heartbeat_latency_seconds` (histogram)
 
+## Documentation
+
+For comprehensive documentation, see the [docs/](docs/) directory:
+
+### 👥 [User Documentation](docs/user/)
+- [Quick Start Guide](docs/user/quick-start.md) - Get up and running in 5 minutes
+- [User Guide](docs/user/guide.md) - Complete user manual
+- [CLI Reference](docs/user/cli.md) - All commands and options
+- [FAQ](docs/user/faq.md) - Frequently asked questions
+
+### 🛠️ [Developer Documentation](docs/developer/)
+- [Architecture](docs/developer/architecture.md) - System design and patterns
+- [Development Guide](docs/developer/development.md) - Setup and workflow
+- [Testing](docs/developer/testing.md) - Testing strategies
+- [Contributing](docs/developer/contributing.md) - How to contribute
+
+### 🚀 [Operations Documentation](docs/operations/)
+- [Deployment Guide](docs/operations/deployment.md) - Production deployment
+- [Monitoring](docs/operations/) - Observability and troubleshooting
+- [Windows Support](docs/operations/windows.md) - Windows-specific instructions
+
+### 📡 [API Documentation](docs/api/)
+- [gRPC API](docs/api/grpc.md) - Complete API reference
+- [Protocol Buffers](docs/api/protobuf.md) - Schema documentation
+
 ## Development
 
 ```bash

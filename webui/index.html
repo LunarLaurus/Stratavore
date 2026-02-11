@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stratavore Job Tracker - Enhanced</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Courier New', monospace; 
+            background: #1a1a1a; 
+            color: #00ff00; 
+            line-height: 1.4;
+        }
+        .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+        .header { text-align: center; margin-bottom: 30px; }
+        .header h1 { color: #00ff00; margin-bottom: 10px; }
+        .header p { color: #888; font-size: 0.9em; }
+        .status-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-bottom: 30px; }
+        .card { 
+            background: #2a2a2a; 
+            border: 1px solid #00ff00; 
+            padding: 20px; 
+            border-radius: 8px; 
+            box-shadow: 0 2px 10px rgba(0,255,0,0.1);
+        }
+        .card h3 { color: #00ff00; margin-bottom: 15px; font-size: 1.2em; }
+        .error { background: #3a2a2a; border-color: #ff0000; }
+        .error h3 { color: #ff0000; }
+        .loading { 
+            background: #2a2a2a; 
+            border: 1px solid #ffff00; 
+            color: #ffff00;
+            text-align: center;
+            padding: 40px;
+        }
+        .job-list { max-height: 500px; overflow-y: auto; }
+        .job { 
+            background: #333; 
+            margin: 15px 0; 
+            padding: 15px; 
+            border-left: 4px solid #00ff00; 
+            border-radius: 4px;
+            transition: all 0.3s ease;
+        }
+        .job:hover { 
+            background: #444; 
+            transform: translateX(5px);
+        }
+        .job.high { border-left-color: #ff0000; }
+        .job.medium { border-left-color: #ffff00; }
+        .job.low { border-left-color: #0066ff; }
+        .job.in-progress { background: #444; border-left-color: #00ffff; }
+        .job.completed { background: #2d4a2d; opacity: 0.8; }
+        .job-title { font-weight: bold; margin-bottom: 8px; font-size: 1.1em; }
+        .job-meta { font-size: 0.9em; color: #ccc; }
+        .job-meta p { margin: 3px 0; }
+        .job-meta strong { color: #fff; }
+        .agents { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px; }
+        .agent { 
+            background: #2a2a2a; 
+            padding: 15px; 
+            border: 1px solid #00ff00; 
+            border-radius: 6px;
+            transition: all 0.3s ease;
+        }
+        .agent:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(0,255,0,0.2); }
+        .agent h4 { color: #00ff00; margin-bottom: 10px; }
+        .time-sessions { max-height: 400px; overflow-y: auto; }
+        .time-session { 
+            background: #333; 
+            margin: 15px 0; 
+            padding: 15px; 
+            border-left: 4px solid #00ffff; 
+            border-radius: 4px;
+            transition: all 0.3s ease;
+        }
+        .time-session.active { 
+            border-left-color: #00ff00; 
+            background: #444; 
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.8; }
+            100% { opacity: 1; }
+        }
+        .session-title { font-weight: bold; margin-bottom: 8px; color: #00ffff; }
+        .session-details p { margin: 5px 0; font-size: 0.9em; }
+        .session-details strong { color: #fff; }
+        .refresh-btn { 
+            background: #00ff00; 
+            color: #000; 
+            border: none; 
+            padding: 12px 25px; 
+            cursor: pointer; 
+            margin: 10px 5px;
+            border-radius: 5px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+        .refresh-btn:hover { 
+            background: #00cc00; 
+            transform: scale(1.05);
+        }
+        .debug-panel {
+            background: #1a1a1a;
+            border: 1px solid #ff00ff;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        .debug-panel h4 { color: #ff00ff; margin-bottom: 10px; }
+        .debug-info { font-size: 0.8em; color: #ccc; }
+        .last-updated { 
+            text-align: center; 
+            color: #888; 
+            margin-top: 20px; 
+            font-size: 0.9em;
+        }
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        .status-indicator.online { background: #00ff00; }
+        .status-indicator.error { background: #ff0000; }
+        .status-indicator.warning { background: #ffff00; }
+        .agent-status-panel { max-height: 400px; overflow-y: auto; }
+        .agent-status-item { 
+            background: #333; 
+            margin: 10px 0; 
+            padding: 15px; 
+            border-left: 4px solid #00ffff; 
+            border-radius: 4px;
+            transition: all 0.3s ease;
+        }
+        .agent-status-item.working { 
+            border-left-color: #00ff00; 
+            background: #444; 
+        }
+        .agent-status-item.idle { 
+            border-left-color: #0066ff; 
+        }
+        .agent-status-item.spawning { 
+            border-left-color: #ffff00; 
+            animation: pulse 2s infinite;
+        }
+        .agent-status-item.error { 
+            border-left-color: #ff0000; 
+        }
+        .agent-header { 
+            font-weight: bold; 
+            margin-bottom: 8px; 
+            display: flex; 
+            align-items: center;
+            gap: 8px;
+        }
+        .agent-emoji { 
+            font-size: 1.2em; 
+        }
+        .agent-details p { 
+            margin: 5px 0; 
+            font-size: 0.9em; 
+            color: #ccc; 
+        }
+        .agent-details strong { 
+            color: #fff; 
+        }
+        .agent-todos {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .todo-item {
+            border: 1px solid #444;
+            border-radius: 4px;
+            margin: 10px 0;
+            padding: 12px;
+            background: #2a2a2a;
+        }
+        .todo-item.completed {
+            border-left: 4px solid #28a745;
+            background: #1e3a1e;
+        }
+        .todo-item.in-progress {
+            border-left: 4px solid #ffc107;
+            background: #3a3a1e;
+        }
+        .todo-item.cancelled {
+            border-left: 4px solid #dc3545;
+            background: #3a1e1e;
+        }
+        .todo-item.pending {
+            border-left: 4px solid #6c757d;
+            background: #2a2a2a;
+        }
+        .todo-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+        .todo-title {
+            font-weight: bold;
+            color: #fff;
+        }
+        .todo-agent {
+            color: #6c757d;
+            font-size: 0.9em;
+        }
+        .todo-description {
+            color: #ccc;
+            margin-bottom: 8px;
+            font-size: 0.9em;
+        }
+        .todo-meta {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8em;
+            color: #888;
+        }
+        .todo-task {
+            color: #007bff;
+        }
+        .no-todos {
+            color: #6c757d;
+            text-align: center;
+            padding: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 STRATAVORE JOB TRACKER v3</h1>
+            <p>Parallel agent workflows with real-time monitoring</p>
+            <div style="margin: 20px 0;">
+                <span class="status-indicator" id="connection-status"></span>
+                <span id="connection-text">Checking connection...</span>
+                <button class="refresh-btn" onclick="loadData()">🔄 REFRESH DATA</button>
+                <button class="refresh-btn" onclick="loadHealth()">🏥 HEALTH CHECK</button>
+                <button class="refresh-btn" onclick="toggleDebug()">🔧 TOGGLE DEBUG</button>
+            </div>
+        </div>
+
+        <div class="debug-panel" id="debug-panel" style="display: none;">
+            <h4>🔧 DEBUG INFO</h4>
+            <div class="debug-info" id="debug-info">
+                Loading debug information...
+            </div>
+        </div>
+
+        <div class="status-grid">
+            <div class="card">
+                <h3>📊 OVERVIEW</h3>
+                <div id="overview">
+                    <div class="loading">🔄 Loading overview...</div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h3>🎯 PRIORITY BREAKDOWN</h3>
+                <div id="priority-breakdown">
+                    <div class="loading">🔄 Loading priorities...</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>📋 ACTIVE JOBS (<span id="active-job-count">0</span>)</h3>
+            <div class="job-list" id="jobs-container">
+                <div class="loading">🔄 Loading jobs...</div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>🤖 AGENT STATUS & WORKFLOW</h3>
+            <div style="margin-bottom: 20px;">
+                <button class="refresh-btn" onclick="spawnAgent()">🚀 SPAWN AGENT</button>
+                <button class="refresh-btn" onclick="showAgentControls()">🎛 AGENT CONTROLS</button>
+            </div>
+            <div class="agents-status-panel" id="agents-status-panel">
+                <div class="loading">🔄 Loading agents...</div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>📝 AGENT ACTIVITY LOG</h3>
+            <div class="agent-todos" id="agent-todos-container">
+                <div class="loading">🔄 Loading agent activities...</div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div id="time-tracking">
+                <h3>⏱️ TIME TRACKING (<span id="active-session-count">0</span> active)</h3>
+                <div class="time-sessions" id="time-sessions-container">
+                    <div class="loading">🔄 Loading time sessions...</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="last-updated" id="last-updated">
+            Last updated: Loading...
+        </div>
+    </div>
+
+    <script>
+        let jobs = [];
+        let progress = {};
+        let timeSessions = [];
+        let agents = {};
+        let agentTodos = [];
+        let lastUpdate = null;
+        let refreshInterval = null;
+        let debugMode = false;
+
+        // Utility functions
+        function formatDuration(seconds) {
+            if (!seconds || seconds < 0) { 
+                return "0:00:00"; 
+            }
+            const hours = Math.floor(seconds / 3600);
+            const minutes = Math.floor((seconds % 3600) / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        function getAgentStatusEmoji(status) {
+            const statusEmojis = {
+                "idle": "😴",
+                "working": "🔨",
+                "spawning": "🚀",
+                "completed": "✅",
+                "error": "❌",
+                "paused": "⏸️"
+            };
+            return statusEmojis[status] || "❓";
+        }
+
+        function getAgentPersonalityEmoji(personality) {
+            const personalityEmojis = {
+                "cadet": "👨‍🚀",
+                "senior": "👴‍💼",
+                "specialist": "🎯",
+                "researcher": "🔬",
+                "debugger": "🐛",
+                "optimizer": "⚡"
+            };
+            return personalityEmojis[personality] || "🤖";
+        }
+
+        function updateConnectionStatus(online, message = '') {
+            const indicator = document.getElementById('connection-status');
+            const text = document.getElementById('connection-text');
+            
+            if (online) {
+                indicator.className = 'status-indicator online';
+                text.textContent = message || 'Connected and online';
+            } else {
+                indicator.className = 'status-indicator error';
+                text.textContent = message || 'Connection error';
+            }
+        }
+
+        function toggleDebug() {
+            debugMode = !debugMode;
+            const panel = document.getElementById('debug-panel');
+            panel.style.display = debugMode ? 'block' : 'none';
+        }
+
+        function showError(cardId, message) {
+            const card = document.getElementById(cardId);
+            if (card) {
+                card.innerHTML = `<div class="error">❌ ${message}</div>`;
+                card.parentElement.classList.add('error');
+            }
+        }
+
+        function updateDebugInfo(data) {
+            const debugInfo = document.getElementById('debug-info');
+            
+            const agentSummary = agents ? Object.keys(agents).length : 0;
+            const activeAgents = agents ? Object.values(agents).filter(a => a.status === 'working').length : 0;
+            const idleAgents = agents ? Object.values(agents).filter(a => a.status === 'idle').length : 0;
+            
+            debugInfo.innerHTML = `
+                <p><strong>Last Update:</strong> ${new Date().toLocaleString()}</p>
+                <p><strong>Data Timestamp:</strong> ${data.timestamp ? new Date(data.timestamp * 1000).toLocaleString() : 'N/A'}</p>
+                <p><strong>Jobs Loaded:</strong> ${data.jobs ? data.jobs.length : 0}</p>
+                <p><strong>Time Sessions:</strong> ${data.time_sessions ? data.time_sessions.length : 0}</p>
+                <p><strong>Active Agents:</strong> ${agentSummary}</p>
+                <p><strong>🔨 Working:</strong> ${activeAgents}</p>
+                <p><strong>😴 Idle:</strong> ${idleAgents}</p>
+                <p><strong>API Response:</strong> ${data.status || 'N/A'}</p>
+                <p><strong>Error:</strong> ${data.error || 'None'}</p>
+                <p><strong>Debug Mode:</strong> ${debugMode ? 'ON' : 'OFF'}</p>
+            `;
+            
+            const debugPanel = document.getElementById('debug-panel');
+            if (debugPanel) {
+                debugPanel.style.display = 'block';
+            }
+        }
+
+        function updateAgentsPanel() {
+            const container = document.getElementById('agents-status-panel');
+            if (!container) {
+                console.log('Agents panel container not found');
+                return;
+            }
+            if (!agents) {
+                console.log('No agents data available');
+                return;
+            }
+            
+            let agentsHTML = '<h4>🤖 ACTIVE AGENTS</h4>';
+            
+            Object.entries(agents).forEach(([agentId, agent]) => {
+                const statusEmoji = getAgentStatusEmoji(agent.status);
+                const personalityEmoji = getAgentPersonalityEmoji(agent.personality);
+                const thoughtText = agent.thoughts && agent.thoughts.length > 0 
+                    ? agent.thoughts[agent.thoughts.length - 1].thought 
+                    : 'No recent thoughts';
+                
+                agentsHTML += `
+                    <div class="agent-status-item ${agent.status}">
+                        <div class="agent-header">
+                            <span class="agent-emoji">${statusEmoji}</span>
+                            <span class="agent-emoji">${personalityEmoji}</span>
+                            <strong>${agentId}</strong> (${agent.personality})
+                        </div>
+                        <div class="agent-details">
+                            <p><strong>Task:</strong> ${agent.current_task || 'No task assigned'}</p>
+                            <p><strong>Thought:</strong> ${thoughtText}</p>
+                            <p><strong>Created:</strong> ${new Date(agent.created_at).toLocaleString()}</p>
+                            <p><strong>Completed:</strong> ${agent.metrics.tasks_completed} tasks</p>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            if (container) {
+                container.innerHTML = agentsHTML;
+            } else {
+                console.log('Agents panel container is null, cannot update');
+            }
+        }
+
+        function updateAgentTodos() {
+            const container = document.getElementById('agent-todos-container');
+            
+            if (!container) {
+                console.log('Agent todos container not found');
+                return;
+            }
+            
+            if (!agentTodos || agentTodos.length === 0) {
+                container.innerHTML = '<div class="no-todos">No agent activities yet</div>';
+                console.log('No agent todos to display');
+                return;
+            }
+
+            console.log(`Updating ${agentTodos.length} agent todos`);
+            let html = '';
+            agentTodos.slice(0, 10).forEach(todo => {
+                const statusClass = todo.status === 'completed' ? 'completed' : 
+                                  todo.status === 'in_progress' ? 'in-progress' : 
+                                  todo.status === 'cancelled' ? 'cancelled' : 'pending';
+                
+                html += `
+                    <div class="todo-item ${statusClass}">
+                        <div class="todo-header">
+                            <span class="todo-title">${todo.title}</span>
+                            <span class="todo-agent">${todo.agent_id} (${todo.metadata?.agent_personality || 'unknown'})</span>
+                        </div>
+                        <div class="todo-description">${todo.description}</div>
+                        <div class="todo-meta">
+                            <span class="todo-time">${new Date(todo.created_at).toLocaleString()}</span>
+                            ${todo.task_id ? `<span class="todo-task">Task: ${todo.task_id}</span>` : ''}
+                        </div>
+                    </div>
+                `;
+            });
+
+            if (container) {
+                container.innerHTML = html;
+            } else {
+                console.log('Agent todos container is null, cannot update');
+            }
+        }
+
+        async function loadData() {
+            try {
+                updateConnectionStatus(false, 'Loading data...');
+                
+                const response = await fetch('/api/status');
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                
+                if (data.status === 'error') {
+                    throw new Error(data.error || 'Unknown API error');
+                }
+                
+                // Parse data
+                jobs = data.jobs || [];
+                progress = data.progress || {};
+                timeSessions = data.time_sessions || [];
+                agents = data.agents || {};
+                agentTodos = data.agent_todos || [];
+                lastUpdate = data.timestamp;
+                
+                console.log('Data loaded:', {
+                    jobs: jobs.length,
+                    agents: Object.keys(agents).length,
+                    todos: agentTodos.length,
+                    sessions: timeSessions.length
+                });
+                
+                // Update UI
+                updateUI();
+                updateConnectionStatus(true, `Loaded ${jobs.length} jobs, ${timeSessions.length} sessions, ${Object.keys(agents).length} agents`);
+                updateDebugInfo(data);
+                
+            } catch (error) {
+                console.error('Error loading data:', error);
+                updateConnectionStatus(false, `Error: ${error.message}`);
+                showError('overview', `Failed to load data: ${error.message}`);
+                updateDebugInfo({error: error.message, timestamp: Date.now() / 1000});
+            }
+        }
+
+        async function loadHealth() {
+            try {
+                const response = await fetch('/api/health');
+                const data = await response.json();
+                
+                if (data.status === 'healthy') {
+                    updateConnectionStatus(true, `Server healthy (uptime: ${Math.floor(data.uptime)}s)`);
+                } else {
+                    updateConnectionStatus(false, 'Server health check failed');
+                }
+            } catch (error) {
+                updateConnectionStatus(false, 'Health check failed');
+            }
+        }
+
+        function calculateJobTime(jobId) {
+            const jobSessions = timeSessions.filter(function(s) { return s.job_id === jobId; });
+            let totalSeconds = 0;
+            
+            jobSessions.forEach(function(session) {
+                if (session.status === 'completed' && session.duration_seconds) {
+                    totalSeconds += session.duration_seconds;
+                } else if (session.status === 'active') {
+                    const currentTime = Date.now() / 1000;
+                    totalSeconds += (currentTime - session.start_timestamp - session.paused_time);
+                }
+            });
+            
+            return {
+                totalSeconds: totalSeconds,
+                totalHours: totalSeconds / 3600,
+                formattedTime: formatDuration(totalSeconds)
+            };
+        }
+
+        function updateUI() {
+            updateOverview();
+            updatePriorityBreakdown();
+            updateJobsList();
+            updateAgents();
+            updateAgentTodos();
+            updateTimeTracking();
+            updateLastUpdated();
+        }
+
+        function updateOverview() {
+            const container = document.getElementById('overview');
+            if (!container) {
+                console.log('Overview container not found');
+                return;
+            }
+            
+            const total = jobs.length;
+            const pending = jobs.filter(function(j) { return j.status === 'pending'; }).length;
+            const inProgress = jobs.filter(function(j) { return j.status === 'in_progress'; }).length;
+            const completed = jobs.filter(function(j) { return j.status === 'completed'; }).length;
+            
+            container.innerHTML = `
+                <p><strong>Total Jobs:</strong> ${total}</p>
+                <p><strong>🟡 Pending:</strong> ${pending}</p>
+                <p><strong>🟠 In Progress:</strong> ${inProgress}</p>
+                <p><strong>🟢 Completed:</strong> ${completed}</p>
+                <p><strong>Completion Rate:</strong> ${total > 0 ? Math.round((completed/total)*100) : 0}%</p>
+                <p><strong>📊 Total Tracked Hours:</strong> ${timeSessions.reduce(function(sum, s) { return sum + (s.duration_seconds || 0); }, 0) / 3600}.toFixed(2)}h</p>
+            `;
+        }
+
+        function updatePriorityBreakdown() {
+            const container = document.getElementById('priority-breakdown');
+            if (!container) {
+                console.log('Priority breakdown container not found');
+                return;
+            }
+            
+            const activeJobs = jobs.filter(function(j) { return j.status !== 'completed'; });
+            const high = activeJobs.filter(function(j) { return j.priority === 'high'; }).length;
+            const medium = activeJobs.filter(function(j) { return j.priority === 'medium'; }).length;
+            const low = activeJobs.filter(function(j) { return j.priority === 'low'; }).length;
+            
+            container.innerHTML = `
+                <p><strong>🔴 High Priority:</strong> ${high}</p>
+                <p><strong>🟡 Medium Priority:</strong> ${medium}</p>
+                <p><strong>🔵 Low Priority:</strong> ${low}</p>
+                <p><strong>📊 Active Total:</strong> ${activeJobs.length}</p>
+            `;
+        }
+
+        function updateJobsList() {
+            const container = document.getElementById('jobs-container');
+            if (!container) {
+                console.log('Jobs container not found');
+                return;
+            }
+            
+            const activeJobs = jobs.filter(function(j) { return j.status !== 'completed'; }).sort(function(a, b) {
+                const priorityOrder = { 'high': 0, 'medium': 1, 'low': 2 };
+                return priorityOrder[a.priority] - priorityOrder[b.priority];
+            });
+            
+            document.getElementById('active-job-count').textContent = activeJobs.length;
+            
+            if (activeJobs.length === 0) {
+                container.innerHTML = '<div class="loading">✅ All jobs completed!</div>';
+                return;
+            }
+            
+            container.innerHTML = activeJobs.map(function(job) {
+                const jobTime = calculateJobTime(job.id);
+                return `
+                    <div class="job ${job.priority} ${job.status.replace('_', '-')}">
+                        <div class="job-title">🏷️ ${job.title}</div>
+                        <div class="job-meta">
+                            <p><strong>ID:</strong> ${job.id}</p>
+                            <p><strong>Status:</strong> ${job.status.replace('_', ' ').toUpperCase()}</p>
+                            <p><strong>Priority:</strong> ${job.priority.toUpperCase()}</p>
+                            <p><strong>Agent:</strong> ${job.assignee || 'UNASSIGNED'}</p>
+                            <p><strong>Estimate:</strong> ${job.estimated_hours}h</p>
+                            <p><strong>Actual Time:</strong> ${jobTime.formattedTime}</p>
+                            <p><strong>Created:</strong> ${new Date(job.created_at).toLocaleString()}</p>
+                            ${job.dependencies.length > 0 ? `<p><strong>🔗 Dependencies:</strong> ${job.dependencies.join(', ')}</p>` : ''}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function updateAgents() {
+            // Legacy agent workload (for compatibility with time tracking)
+            const container = document.getElementById('agents-container');
+            if (!container) {
+                console.log('Legacy agents container not found');
+                return;
+            }
+            
+            const agentStats = {};
+            
+            jobs.forEach(function(job) {
+                if (job.assignee) {
+                    if (!agentStats[job.assignee]) {
+                        agentStats[job.assignee] = { active: 0, completed: 0, trackedHours: 0 };
+                    }
+                    
+                    const jobTime = calculateJobTime(job.id);
+                    agentStats[job.assignee].trackedHours = jobTime.totalHours;
+                    
+                    if (job.status === 'completed') {
+                        agentStats[job.assignee].completed++;
+                    } else if (job.status === 'in_progress') {
+                        agentStats[job.assignee].active++;
+                    }
+                }
+            });
+            
+            container.innerHTML = Object.keys(agentStats).map(function(agent) {
+                const stats = agentStats[agent];
+                return `
+                    <div class="agent">
+                        <h4>🤖 ${agent}</h4>
+                        <p><strong>Active Jobs:</strong> ${stats.active}</p>
+                        <p><strong>Completed:</strong> ${stats.completed}</p>
+                        <p><strong>Tracked Hours:</strong> ${stats.trackedHours.toFixed(2)}h</p>
+                    </div>
+                `;
+            }).join('') + '<div class="agent"><h4>🔄 UNASSIGNED</h4><p>Ready for assignment</p></div>';
+            
+            // Update agents panel
+            updateAgentsPanel();
+        }
+
+        function updateTimeTracking() {
+            const container = document.getElementById('time-sessions-container');
+            if (!container) {
+                console.log('Time sessions container not found');
+                return;
+            }
+            
+            const activeSessions = timeSessions.filter(function(s) { return s.status === 'active'; });
+            const currentTime = Date.now() / 1000;
+            
+            const activeCountElement = document.getElementById('active-session-count');
+            if (activeCountElement) {
+                activeCountElement.textContent = activeSessions.length;
+            } else {
+                console.log('Active session count element not found');
+            }
+            
+            if (activeSessions.length === 0) {
+                container.innerHTML = '<div class="loading">📭 No active time sessions</div>';
+                return;
+            }
+            
+            let timeHTML = '';
+            activeSessions.forEach(function(session) {
+                const currentDuration = currentTime - session.start_timestamp - session.paused_time;
+                const durationStr = formatDuration(currentDuration);
+                const startTime = new Date(session.start_timestamp * 1000).toLocaleTimeString();
+                
+                timeHTML += `
+                    <div class="time-session active">
+                        <div class="session-title">${session.session_id}</div>
+                        <div class="session-details">
+                            <p><strong>Job:</strong> ${session.job_id}</p>
+                            <p><strong>Agent:</strong> ${session.agent}</p>
+                            <p><strong>Started:</strong> ${startTime}</p>
+                            <p><strong>Duration:</strong> ${durationStr}</p>
+                            ${session.description ? `<p><strong>Note:</strong> ${session.description}</p>` : ''}
+                        </div>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = timeHTML;
+        }
+
+        function updateLastUpdated() {
+            const container = document.getElementById('last-updated');
+            container.textContent = `Last updated: ${new Date().toLocaleString()}`;
+        }
+
+        // Auto-refresh every 30 seconds
+        function spawnAgent() {
+            const personality = prompt('Enter agent personality (cadet, senior, specialist, researcher, debugger, optimizer):');
+            if (personality) {
+                fetch('/api/spawn-agent', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ personality: personality })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        alert(`Agent ${data.agent_id} spawned successfully!`);
+                        setTimeout(loadData, 1000);
+                    } else {
+                        alert(`Failed to spawn agent: ${data.error}`);
+                    }
+                })
+                .catch(error => {
+                    alert(`Error spawning agent: ${error.message}`);
+                });
+            }
+        }
+
+        function showAgentControls() {
+            const controls = document.getElementById('agent-controls');
+            if (controls) {
+                controls.style.display = controls.style.display === 'none' ? 'block' : 'none';
+            }
+        }
+
+        function startAutoRefresh() {
+            if (refreshInterval) {
+                clearInterval(refreshInterval);
+            }
+            refreshInterval = setInterval(function() {
+                console.log('Auto-refreshing...');
+                loadData();
+            }, 30000);
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 Stratavore Job Tracker v3 loaded - Parallel Agent System');
+            loadData();
+            startAutoRefresh();
+        });
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', function() {
+            if (refreshInterval) {
+                clearInterval(refreshInterval);
+            }
+        });
+    </script>
+</body>
+</html>
