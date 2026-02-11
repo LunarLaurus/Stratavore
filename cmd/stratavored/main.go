@@ -116,10 +116,10 @@ func run() error {
 	runnerMgr := daemon.NewRunnerManager(db, mqClient, logger)
 
 	// Create API handler
-	apiHandler := daemon.NewGRPCServer(runnerMgr, db, logger, cfg.Daemon.GRPCPort)
+	apiHandler := daemon.NewGRPCServer(runnerMgr, db, logger, cfg.Daemon.Port_GRPC)
 
 	// Start HTTP API server
-	httpServer := daemon.NewHTTPServer(cfg.Daemon.GRPCPort, apiHandler, logger)
+	httpServer := daemon.NewHTTPServer(cfg.Daemon.Port_HTTP, apiHandler, logger)
 	go func() {
 		if err := httpServer.Start(); err != nil {
 			logger.Error("HTTP API server error", zap.Error(err))
@@ -154,7 +154,7 @@ func run() error {
 	}
 
 	// Start gRPC server
-	grpcServer := daemon.NewGRPCServer(runnerMgr, db, logger, cfg.Daemon.GRPCPort)
+	grpcServer := daemon.NewGRPCServer(runnerMgr, db, logger, cfg.Daemon.Port_GRPC)
 	go func() {
 		if err := grpcServer.Start(); err != nil {
 			logger.Error("gRPC server error", zap.Error(err))
@@ -162,7 +162,7 @@ func run() error {
 	}()
 
 	logger.Info("stratavore daemon started successfully",
-		zap.Int("grpc_port", cfg.Daemon.GRPCPort),
+		zap.Int("grpc_port", cfg.Daemon.Port_GRPC),
 		zap.Int("metrics_port", cfg.Docker.Prometheus.Port))
 
 	// Wait for shutdown signal

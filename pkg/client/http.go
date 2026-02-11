@@ -10,21 +10,27 @@ import (
 	"time"
 
 	"github.com/meridian-lex/stratavore/pkg/api"
+	"go.uber.org/zap"
 )
 
 // Client communicates with stratavore daemon via HTTP API
 type Client struct {
 	baseURL string
+	version int
 	client  *http.Client
+	logger  *zap.Logger
 }
 
 // NewClient creates a new API client
-func NewClient(host string, port int) *Client {
+func NewClient(host string, port int, version int) *Client {
+	logger, _ := zap.NewProduction()
 	return &Client{
-		baseURL: fmt.Sprintf("http://%s:%d/api/v1", host, port),
+		baseURL: fmt.Sprintf("http://%s:%d/api/v%d", host, port, version),
+		version: version,
 		client: &http.Client{
 			Timeout: 30 * time.Second,
 		},
+		logger: logger,
 	}
 }
 
@@ -169,20 +175,26 @@ func (c *Client) get(ctx context.Context, url string, respBody interface{}) erro
 
 // Ping checks if daemon is reachable
 func (c *Client) Ping(ctx context.Context) error {
-	req, err := http.NewRequestWithContext(ctx, "GET", c.baseURL+"/../health", nil)
+	c.logger.Info("Pinging daemon", zap.String("url", c.baseURL+"/health"))
+
+	req, err := http.NewRequestWithContext(ctx, "GET", c.baseURL+"/health", nil)
 	if err != nil {
+		c.logger.Error("Failed to create HTTP request", zap.Error(err))
 		return err
 	}
 
 	resp, err := c.client.Do(req)
 	if err != nil {
+		c.logger.Error("Failed to reach daemon", zap.Error(err))
 		return fmt.Errorf("daemon unreachable: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
+		c.logger.Warn("Daemon returned non-OK status", zap.Int("status", resp.StatusCode))
 		return fmt.Errorf("daemon unhealthy: status %d", resp.StatusCode)
 	}
 
+	c.logger.Info("Daemon healthy")
 	return nil
 }

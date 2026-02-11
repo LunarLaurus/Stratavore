@@ -18,11 +18,22 @@ import (
 // getAPIClient creates configured API client
 func getAPIClient() *client.Client {
 	cfg, _ := config.LoadConfig()
-	return client.NewClient("localhost", cfg.Daemon.GRPCPort)
+
+	if grpc {
+		// gRPC client
+		return client.NewClient("localhost", cfg.Daemon.Port_GRPC, 1)
+	} else {
+		// HTTP client
+		httpPort := cfg.Daemon.Port_HTTP
+		if httpPort == 0 {
+			httpPort = 50049 // fallback default
+		}
+		return client.NewClient("localhost", httpPort, 1)
+	}
 }
 
 var (
-	Version   = "1.3.0"
+	Version   = "1.3.1"
 	BuildTime = "unknown"
 	Commit    = "unknown"
 )
@@ -30,6 +41,7 @@ var (
 var (
 	flagsVar   string
 	godMode    bool
+	grpc       bool
 	preset     string
 	configFile string
 )
@@ -77,6 +89,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&flagsVar, "flags", "", "Claude Code flags")
 	rootCmd.PersistentFlags().BoolVar(&godMode, "god", false, "God mode (full access)")
 	rootCmd.PersistentFlags().StringVar(&preset, "preset", "", "Use preset configuration")
+	rootCmd.PersistentFlags().BoolVar(&grpc, "grpc", false, "Use gRPC client (default false)")
 
 	// Add subcommands
 	rootCmd.AddCommand(statusCmd)

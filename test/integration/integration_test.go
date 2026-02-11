@@ -21,7 +21,7 @@ func TestDaemonStartup(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	apiClient := client.NewClient("localhost", 50051)
+	apiClient := client.NewClient("localhost", 50051, 1)
 
 	// Ping daemon
 	err := apiClient.Ping(ctx)
@@ -35,7 +35,7 @@ func TestProjectLifecycle(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	apiClient := client.NewClient("localhost", 50051)
+	apiClient := client.NewClient("localhost", 50051, 1)
 
 	// Create project
 	req := &api.CreateProjectRequest{
@@ -75,7 +75,7 @@ func TestRunnerLifecycle(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	apiClient := client.NewClient("localhost", 50051)
+	apiClient := client.NewClient("localhost", 50051, 1)
 
 	// Create test project first
 	projectName := "test-runner-" + time.Now().Format("20060102150405")
@@ -139,7 +139,7 @@ func TestDaemonStatus(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	apiClient := client.NewClient("localhost", 50051)
+	apiClient := client.NewClient("localhost", 50051, 1)
 
 	resp, err := apiClient.GetStatus(ctx)
 	require.NoError(t, err)
@@ -206,7 +206,7 @@ func TestReconciliation(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	apiClient := client.NewClient("localhost", 50051)
+	apiClient := client.NewClient("localhost", 50051, 1)
 
 	// Trigger reconciliation
 	resp, err := apiClient.TriggerReconciliation(ctx)
@@ -217,7 +217,7 @@ func TestReconciliation(t *testing.T) {
 // BenchmarkAPILatency benchmarks API call latency
 func BenchmarkAPILatency(b *testing.B) {
 	ctx := context.Background()
-	apiClient := client.NewClient("localhost", 50051)
+	apiClient := client.NewClient("localhost", 50051, 1)
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {

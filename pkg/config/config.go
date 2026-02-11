@@ -10,11 +10,11 @@ import (
 
 // Config represents the application configuration
 type Config struct {
-	Database     DatabaseConfig     `mapstructure:"database"`
-	Docker       DockerConfig       `mapstructure:"docker"`
-	Daemon       DaemonConfig       `mapstructure:"daemon"`
+	Database      DatabaseConfig      `mapstructure:"database"`
+	Docker        DockerConfig        `mapstructure:"docker"`
+	Daemon        DaemonConfig        `mapstructure:"daemon"`
 	Observability ObservabilityConfig `mapstructure:"observability"`
-	Security     SecurityConfig     `mapstructure:"security"`
+	Security      SecurityConfig      `mapstructure:"security"`
 }
 
 // DatabaseConfig holds database connection settings
@@ -59,12 +59,12 @@ type APIGatewayConfig struct {
 
 // RabbitMQConfig for event messaging
 type RabbitMQConfig struct {
-	Host            string `mapstructure:"host"`
-	Port            int    `mapstructure:"port"`
-	User            string `mapstructure:"user"`
-	Password        string `mapstructure:"password"`
-	Exchange        string `mapstructure:"exchange"`
-	PublisherConfirms bool `mapstructure:"publisher_confirms"`
+	Host              string `mapstructure:"host"`
+	Port              int    `mapstructure:"port"`
+	User              string `mapstructure:"user"`
+	Password          string `mapstructure:"password"`
+	Exchange          string `mapstructure:"exchange"`
+	PublisherConfirms bool   `mapstructure:"publisher_confirms"`
 }
 
 // NtfyConfig for notifications (deprecated - using Telegram)
@@ -96,7 +96,8 @@ type QdrantConfig struct {
 
 // DaemonConfig for daemon-specific settings
 type DaemonConfig struct {
-	GRPCPort           int    `mapstructure:"grpc_port"`
+	Port_GRPC          int    `mapstructure:"grpc_port"`
+	Port_HTTP          int    `mapstructure:"http_port"`
 	HeartbeatInterval  int    `mapstructure:"heartbeat_interval_seconds"`
 	ReconcileInterval  int    `mapstructure:"reconcile_interval_seconds"`
 	OutboxPollInterval int    `mapstructure:"outbox_poll_interval_seconds"`
@@ -106,9 +107,9 @@ type DaemonConfig struct {
 
 // ObservabilityConfig for logging and tracing
 type ObservabilityConfig struct {
-	LogLevel  string `mapstructure:"log_level"`
-	LogFormat string `mapstructure:"log_format"` // json or console
-	TracingEnabled bool `mapstructure:"tracing_enabled"`
+	LogLevel       string `mapstructure:"log_level"`
+	LogFormat      string `mapstructure:"log_format"` // json or console
+	TracingEnabled bool   `mapstructure:"tracing_enabled"`
 }
 
 // SecurityConfig for authentication and encryption
@@ -124,24 +125,24 @@ type SecurityConfig struct {
 // LoadConfig loads configuration from file and environment
 func LoadConfig() (*Config, error) {
 	v := viper.New()
-	
+
 	// Set config name and paths
 	v.SetConfigName("stratavore")
 	v.SetConfigType("yaml")
-	
+
 	// Search paths
 	homeDir, _ := os.UserHomeDir()
 	v.AddConfigPath(filepath.Join(homeDir, ".config", "stratavore"))
 	v.AddConfigPath("/etc/stratavore")
 	v.AddConfigPath(".")
-	
+
 	// Environment variables
 	v.SetEnvPrefix("STRATAVORE")
 	v.AutomaticEnv()
-	
+
 	// Set defaults
 	setDefaults(v)
-	
+
 	// Read config file (optional)
 	if err := v.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
@@ -149,18 +150,18 @@ func LoadConfig() (*Config, error) {
 		}
 		// Config file not found is OK, use defaults
 	}
-	
+
 	var cfg Config
 	if err := v.Unmarshal(&cfg); err != nil {
 		return nil, fmt.Errorf("error unmarshaling config: %w", err)
 	}
-	
+
 	// Override with secrets from files if specified
 	if cfg.Security.TokenSecretPath != "" {
 		// Read token secret from file (e.g., Docker secret)
 		// This is just a placeholder - implement as needed
 	}
-	
+
 	return &cfg, nil
 }
 
@@ -173,39 +174,39 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("database.postgresql.sslmode", "prefer")
 	v.SetDefault("database.postgresql.max_conns", 25)
 	v.SetDefault("database.postgresql.min_conns", 5)
-	
+
 	homeDir, _ := os.UserHomeDir()
 	v.SetDefault("database.sqlite.path", filepath.Join(homeDir, ".config", "stratavore", "stratavore.db"))
-	
+
 	// Docker defaults
 	v.SetDefault("docker.api_gateway.host", "localhost")
 	v.SetDefault("docker.api_gateway.port", 8000)
 	v.SetDefault("docker.api_gateway.enabled", false)
-	
+
 	v.SetDefault("docker.rabbitmq.host", "localhost")
 	v.SetDefault("docker.rabbitmq.port", 5672)
 	v.SetDefault("docker.rabbitmq.user", "guest")
 	v.SetDefault("docker.rabbitmq.password", "guest")
 	v.SetDefault("docker.rabbitmq.exchange", "stratavore.events")
 	v.SetDefault("docker.rabbitmq.publisher_confirms", true)
-	
+
 	v.SetDefault("docker.ntfy.host", "localhost")
 	v.SetDefault("docker.ntfy.port", 2586)
 	v.SetDefault("docker.ntfy.topics.status", "stratavore-status")
 	v.SetDefault("docker.ntfy.topics.alerts", "stratavore-alerts")
-	
+
 	// Telegram defaults (read from environment)
 	v.SetDefault("docker.telegram.token", "")
 	v.SetDefault("docker.telegram.chat_id", "")
-	
+
 	v.SetDefault("docker.prometheus.enabled", true)
 	v.SetDefault("docker.prometheus.port", 9091)
 	v.SetDefault("docker.prometheus.path", "/metrics")
-	
+
 	v.SetDefault("docker.qdrant.host", "localhost")
 	v.SetDefault("docker.qdrant.port", 6333)
 	v.SetDefault("docker.qdrant.enabled", false)
-	
+
 	// Daemon defaults
 	v.SetDefault("daemon.grpc_port", 50051)
 	v.SetDefault("daemon.heartbeat_interval_seconds", 10)
@@ -213,12 +214,12 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("daemon.outbox_poll_interval_seconds", 2)
 	v.SetDefault("daemon.shutdown_timeout_seconds", 30)
 	v.SetDefault("daemon.data_dir", filepath.Join(homeDir, ".local", "share", "stratavore"))
-	
+
 	// Observability defaults
 	v.SetDefault("observability.log_level", "info")
 	v.SetDefault("observability.log_format", "json")
 	v.SetDefault("observability.tracing_enabled", false)
-	
+
 	// Security defaults
 	v.SetDefault("security.enable_mtls", false)
 	v.SetDefault("security.join_token_ttl_seconds", 300)

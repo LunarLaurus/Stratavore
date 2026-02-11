@@ -10,7 +10,7 @@ echo ========================================
 echo.
 
 REM Set version info
-set VERSION=1.3.0
+set VERSION=1.3.1
 set BUILD_TIME=%date% %time%
 set COMMIT=windows-build
 

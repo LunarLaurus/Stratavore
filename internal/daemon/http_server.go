@@ -37,7 +37,7 @@ func NewHTTPServer(port int, handler *GRPCServer, logger *zap.Logger) *HTTPServe
 	mux.HandleFunc("/api/v1/heartbeat", httpServer.handleHeartbeat)
 	mux.HandleFunc("/api/v1/status", httpServer.handleStatus)
 	mux.HandleFunc("/api/v1/reconcile", httpServer.handleReconcile)
-	mux.HandleFunc("/health", httpServer.handleHealth)
+	mux.HandleFunc("/api/v1/health", httpServer.handleHealth)
 
 	httpServer.server = &http.Server{
 		Addr:         fmt.Sprintf(":%d", port),

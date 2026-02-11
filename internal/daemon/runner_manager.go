@@ -3,7 +3,10 @@ package daemon
 import (
 	"context"
 	"fmt"
+	"os"
 	"os/exec"
+	"path/filepath"
+	"runtime"
 	"sync"
 	"syscall"
 	"time"
@@ -111,7 +114,10 @@ func (rm *RunnerManager) startAgent(
 	}
 
 	// Create command with context for graceful shutdown
-	cmd := exec.CommandContext(ctx, "stratavore-agent", args...)
+	cmd, err := launchAgent(ctx, args) // This will return the command, but we need to set it up first
+	if err != nil {
+		return nil, fmt.Errorf("launch agent: %w", err)
+	}
 
 	// Set up logging (could redirect to structured log files)
 	// cmd.Stdout = ...
@@ -143,6 +149,34 @@ func (rm *RunnerManager) startAgent(
 	go rm.monitorProcess(runner.ID, cmd)
 
 	return managed, nil
+}
+
+// launchAgent returns an exec.Cmd pointing to stratavore-agent
+func launchAgent(ctx context.Context, args []string) (*exec.Cmd, error) {
+	exeName := "stratavore-agent"
+	if runtime.GOOS == "windows" {
+		exeName += ".exe"
+	}
+
+	var agentPath string
+
+	// First try same directory as this executable
+	exePath, err := os.Executable()
+	if err == nil {
+		exeDir := filepath.Dir(exePath)
+		candidate := filepath.Join(exeDir, exeName)
+		if _, err := os.Stat(candidate); err == nil {
+			agentPath = candidate
+		}
+	}
+
+	// Fallback to PATH if not found
+	if agentPath == "" {
+		agentPath = exeName
+	}
+
+	cmd := exec.CommandContext(ctx, agentPath, args...)
+	return cmd, nil
 }
 
 // monitorProcess watches the agent process and updates status on exit
