@@ -1,0 +1,181 @@
+version: '3.8'
+
+services:
+  # PostgreSQL with pgvector extension
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: stratavore-postgres
+    environment:
+      POSTGRES_DB: stratavore_state
+      POSTGRES_USER: stratavore
+      POSTGRES_PASSWORD: stratavore_dev_password_change_in_prod
+      POSTGRES_INITDB_ARGS: "-E UTF8"
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./migrations/postgres:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U stratavore -d stratavore_state"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - stratavore
+
+  # RabbitMQ message broker
+  rabbitmq:
+    image: rabbitmq:3.12-management-alpine
+    container_name: stratavore-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+      RABBITMQ_DEFAULT_VHOST: /
+    ports:
+      - "5672:5672"   # AMQP
+      - "15672:15672" # Management UI
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - stratavore
+
+  # Prometheus for metrics collection
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: stratavore-prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--web.enable-lifecycle'
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./configs/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    networks:
+      - stratavore
+    depends_on:
+      - stratavored
+
+  # Grafana for metrics visualization
+  grafana:
+    image: grafana/grafana:latest
+    container_name: stratavore-grafana
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_INSTALL_PLUGINS: grafana-piechart-panel
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./configs/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./configs/grafana/datasources:/etc/grafana/provisioning/datasources:ro
+    networks:
+      - stratavore
+    depends_on:
+      - prometheus
+
+  # Qdrant vector database (for future session embeddings)
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: stratavore-qdrant
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant_data:/qdrant/storage
+    environment:
+      QDRANT_SERVICE__GRPC_PORT: 6334
+    networks:
+      - stratavore
+
+  # Redis for caching (optional performance boost)
+  redis:
+    image: redis:7-alpine
+    container_name: stratavore-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks:
+      - stratavore
+
+  # Stratavore Daemon
+  stratavored:
+    build:
+      context: .
+      dockerfile: Dockerfile.daemon
+    container_name: stratavore-daemon
+    ports:
+      - "50051:50051" # HTTP API
+      - "9091:9091"   # Prometheus metrics
+    environment:
+      STRATAVORE_DATABASE_POSTGRESQL_HOST: postgres
+      STRATAVORE_DATABASE_POSTGRESQL_PORT: 5432
+      STRATAVORE_DATABASE_POSTGRESQL_USER: stratavore
+      STRATAVORE_DATABASE_POSTGRESQL_PASSWORD: stratavore_dev_password_change_in_prod
+      STRATAVORE_DATABASE_POSTGRESQL_DATABASE: stratavore_state
+      STRATAVORE_DOCKER_RABBITMQ_HOST: rabbitmq
+      STRATAVORE_DOCKER_RABBITMQ_PORT: 5672
+      STRATAVORE_DOCKER_PROMETHEUS_ENABLED: "true"
+      STRATAVORE_DOCKER_PROMETHEUS_PORT: 9091
+      STRATAVORE_DOCKER_QDRANT_HOST: qdrant
+      STRATAVORE_DOCKER_QDRANT_PORT: 6333
+      # Optional: Telegram notifications
+      # STRATAVORE_DOCKER_TELEGRAM_TOKEN: ${TELEGRAM_BOT_TOKEN}
+      # STRATAVORE_DOCKER_TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID}
+    volumes:
+      - ./configs/stratavore.yaml:/etc/stratavore/stratavore.yaml:ro
+      - stratavore_data:/var/lib/stratavore
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - stratavore
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:50051/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  postgres_data:
+    driver: local
+  rabbitmq_data:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+  qdrant_data:
+    driver: local
+  redis_data:
+    driver: local
+  stratavore_data:
+    driver: local
+
+networks:
+  stratavore:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.25.0.0/16

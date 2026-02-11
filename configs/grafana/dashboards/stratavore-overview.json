@@ -1,0 +1,116 @@
+{
+  "dashboard": {
+    "title": "Stratavore Overview",
+    "tags": ["stratavore", "overview"],
+    "timezone": "browser",
+    "schemaVersion": 16,
+    "version": 1,
+    "refresh": "10s",
+    "panels": [
+      {
+        "id": 1,
+        "title": "Active Runners",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+        "targets": [
+          {
+            "expr": "sum(stratavore_runners_total) by (status)",
+            "legendFormat": "{{status}}",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {"format": "short", "label": "Runners"},
+          {"format": "short"}
+        ]
+      },
+      {
+        "id": 2,
+        "title": "Token Usage",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+        "targets": [
+          {
+            "expr": "stratavore_tokens_used_total",
+            "legendFormat": "Tokens Used",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {"format": "short", "label": "Tokens"},
+          {"format": "short"}
+        ]
+      },
+      {
+        "id": 3,
+        "title": "Runners by Project",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
+        "targets": [
+          {
+            "expr": "stratavore_runners_by_project",
+            "legendFormat": "{{project}}",
+            "refId": "A"
+          }
+        ]
+      },
+      {
+        "id": 4,
+        "title": "Heartbeat Latency",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8},
+        "targets": [
+          {
+            "expr": "stratavore_heartbeat_latency_seconds_avg",
+            "legendFormat": "Avg Latency",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {"format": "s", "label": "Latency"},
+          {"format": "short"}
+        ]
+      },
+      {
+        "id": 5,
+        "title": "Daemon Uptime",
+        "type": "singlestat",
+        "gridPos": {"h": 4, "w": 6, "x": 0, "y": 16},
+        "targets": [
+          {
+            "expr": "stratavore_daemon_uptime_seconds",
+            "refId": "A"
+          }
+        ],
+        "format": "dtdurations",
+        "valueName": "current"
+      },
+      {
+        "id": 6,
+        "title": "Active Sessions",
+        "type": "singlestat",
+        "gridPos": {"h": 4, "w": 6, "x": 6, "y": 16},
+        "targets": [
+          {
+            "expr": "stratavore_sessions_total",
+            "refId": "A"
+          }
+        ],
+        "valueName": "current"
+      },
+      {
+        "id": 7,
+        "title": "Runner Status Distribution",
+        "type": "piechart",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 16},
+        "targets": [
+          {
+            "expr": "stratavore_runners_total",
+            "legendFormat": "{{status}}",
+            "refId": "A"
+          }
+        ]
+      }
+    ]
+  }
+}
