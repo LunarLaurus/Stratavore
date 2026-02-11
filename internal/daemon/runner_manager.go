@@ -6,6 +6,7 @@ import (
 	"os/exec"
 	"sync"
 	"time"
+	"syscall"
 
 	"github.com/meridian/stratavore/internal/messaging"
 	"github.com/meridian/stratavore/internal/storage"
@@ -223,7 +224,8 @@ func (rm *RunnerManager) StopRunner(ctx context.Context, runnerID string) error 
 	
 	// Send SIGTERM to process
 	if managed.Process != nil && managed.Process.Process != nil {
-		managed.Process.Process.Signal(exec.Command("").Process.Signal(nil)) // SIGTERM
+		// Import "syscall" at the top of the file if not already imported
+		managed.Process.Process.Signal(syscall.SIGTERM)
 		
 		// Wait for graceful shutdown with timeout
 		done := make(chan struct{})

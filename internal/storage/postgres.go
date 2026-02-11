@@ -24,22 +24,22 @@ func NewPostgresClient(ctx context.Context, connString string, maxConns, minConn
 	if err != nil {
 		return nil, fmt.Errorf("parse connection string: %w", err)
 	}
-	
+
 	config.MaxConns = int32(maxConns)
 	config.MinConns = int32(minConns)
 	config.MaxConnLifetime = time.Hour
 	config.MaxConnIdleTime = 30 * time.Minute
-	
+
 	pool, err := pgxpool.NewWithConfig(ctx, config)
 	if err != nil {
 		return nil, fmt.Errorf("create pool: %w", err)
 	}
-	
+
 	// Test connection
 	if err := pool.Ping(ctx); err != nil {
 		return nil, fmt.Errorf("ping database: %w", err)
 	}
-	
+
 	return &PostgresClient{pool: pool}, nil
 }
 
@@ -61,7 +61,7 @@ func (c *PostgresClient) CreateProject(ctx context.Context, project *types.Proje
 		INSERT INTO projects (name, path, status, description, tags)
 		VALUES ($1, $2, $3, $4, $5)
 	`
-	
+
 	_, err := c.pool.Exec(ctx, query,
 		project.Name,
 		project.Path,
@@ -69,7 +69,7 @@ func (c *PostgresClient) CreateProject(ctx context.Context, project *types.Proje
 		project.Description,
 		project.Tags,
 	)
-	
+
 	return err
 }
 
@@ -82,11 +82,11 @@ func (c *PostgresClient) GetProject(ctx context.Context, name string) (*types.Pr
 		FROM projects
 		WHERE name = $1
 	`
-	
+
 	var project types.Project
 	var tags []string
 	var lastAccessed, archived sql.NullTime
-	
+
 	err := c.pool.QueryRow(ctx, query, name).Scan(
 		&project.Name,
 		&project.Path,
@@ -102,14 +102,14 @@ func (c *PostgresClient) GetProject(ctx context.Context, name string) (*types.Pr
 		&archived,
 		&project.UpdatedAt,
 	)
-	
+
 	if err != nil {
 		if err == pgx.ErrNoRows {
 			return nil, fmt.Errorf("project not found: %s", name)
 		}
 		return nil, err
 	}
-	
+
 	project.Tags = tags
 	if lastAccessed.Valid {
 		project.LastAccessedAt = &lastAccessed.Time
@@ -117,7 +117,7 @@ func (c *PostgresClient) GetProject(ctx context.Context, name string) (*types.Pr
 	if archived.Valid {
 		project.ArchivedAt = &archived.Time
 	}
-	
+
 	return &project, nil
 }
 
@@ -129,27 +129,27 @@ func (c *PostgresClient) ListProjects(ctx context.Context, status string) ([]*ty
 		       created_at, last_accessed_at, archived_at, updated_at
 		FROM projects
 	`
-	
+
 	args := []interface{}{}
 	if status != "" {
 		query += " WHERE status = $1"
 		args = append(args, status)
 	}
-	
+
 	query += " ORDER BY last_accessed_at DESC NULLS LAST, name"
-	
+
 	rows, err := c.pool.Query(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	
+
 	var projects []*types.Project
 	for rows.Next() {
 		var project types.Project
 		var tags []string
 		var lastAccessed, archived sql.NullTime
-		
+
 		err := rows.Scan(
 			&project.Name,
 			&project.Path,
@@ -165,11 +165,11 @@ func (c *PostgresClient) ListProjects(ctx context.Context, status string) ([]*ty
 			&archived,
 			&project.UpdatedAt,
 		)
-		
+
 		if err != nil {
 			return nil, err
 		}
-		
+
 		project.Tags = tags
 		if lastAccessed.Valid {
 			project.LastAccessedAt = &lastAccessed.Time
@@ -177,10 +177,10 @@ func (c *PostgresClient) ListProjects(ctx context.Context, status string) ([]*ty
 		if archived.Valid {
 			project.ArchivedAt = &archived.Time
 		}
-		
+
 		projects = append(projects, &project)
 	}
-	
+
 	return projects, rows.Err()
 }
 
@@ -193,13 +193,13 @@ func (c *PostgresClient) CreateRunnerTx(ctx context.Context, req *types.LaunchRe
 		return nil, fmt.Errorf("begin transaction: %w", err)
 	}
 	defer tx.Rollback(ctx)
-	
+
 	// Acquire advisory lock per project to avoid race conditions
 	_, err = tx.Exec(ctx, "SELECT pg_advisory_xact_lock(hash_project($1))", req.ProjectName)
 	if err != nil {
 		return nil, fmt.Errorf("acquire lock: %w", err)
 	}
-	
+
 	// Check quota
 	var activeCount int
 	err = tx.QueryRow(ctx, `
@@ -209,11 +209,11 @@ func (c *PostgresClient) CreateRunnerTx(ctx context.Context, req *types.LaunchRe
 	if err != nil {
 		return nil, fmt.Errorf("check quota: %w", err)
 	}
-	
+
 	if activeCount >= quotaMax {
 		return nil, fmt.Errorf("quota exceeded: %d/%d runners active", activeCount, quotaMax)
 	}
-	
+
 	// Create runner
 	runnerID := uuid.New().String()
 	runner := &types.Runner{
@@ -233,11 +233,11 @@ func (c *PostgresClient) CreateRunnerTx(ctx context.Context, req *types.LaunchRe
 		CreatedAt:          time.Now(),
 		UpdatedAt:          time.Now(),
 	}
-	
+
 	flagsJSON, _ := json.Marshal(runner.Flags)
 	capsJSON, _ := json.Marshal(runner.Capabilities)
 	envJSON, _ := json.Marshal(runner.Environment)
-	
+
 	_, err = tx.Exec(ctx, `
 		INSERT INTO runners (
 			id, runtime_type, runtime_id, project_name, project_path, status,
@@ -248,11 +248,11 @@ func (c *PostgresClient) CreateRunnerTx(ctx context.Context, req *types.LaunchRe
 		runner.Status, flagsJSON, capsJSON, envJSON, runner.ConversationMode,
 		runner.SessionID, runner.MaxRestartAttempts, runner.HeartbeatTTL,
 		runner.StartedAt)
-	
+
 	if err != nil {
 		return nil, fmt.Errorf("insert runner: %w", err)
 	}
-	
+
 	// Create outbox event
 	event := map[string]interface{}{
 		"type":         "runner.started",
@@ -260,25 +260,25 @@ func (c *PostgresClient) CreateRunnerTx(ctx context.Context, req *types.LaunchRe
 		"project_name": req.ProjectName,
 		"timestamp":    time.Now().Format(time.RFC3339),
 	}
-	
+
 	eventJSON, _ := json.Marshal(event)
 	routingKey := fmt.Sprintf("runner.started.%s", req.ProjectName)
-	
+
 	_, err = tx.Exec(ctx, `
 		INSERT INTO outbox (
 			service_name, event_type, payload, aggregate_type, aggregate_id, routing_key
 		) VALUES ($1, $2, $3, $4, $5, $6)
 	`, "stratavore", "runner.started", eventJSON, "runner", runnerID, routingKey)
-	
+
 	if err != nil {
 		return nil, fmt.Errorf("insert outbox: %w", err)
 	}
-	
+
 	// Commit transaction
 	if err := tx.Commit(ctx); err != nil {
 		return nil, fmt.Errorf("commit transaction: %w", err)
 	}
-	
+
 	return runner, nil
 }
 
@@ -306,7 +306,7 @@ func (c *PostgresClient) UpdateRunnerHeartbeat(ctx context.Context, hb *types.He
 		    tokens_used = $4, status = $5, session_id = $6
 		WHERE id = $7
 	`, hb.Timestamp, hb.CPUPercent, hb.MemoryMB, hb.TokensUsed, hb.Status, hb.SessionID, hb.RunnerID)
-	
+
 	return err
 }
 
@@ -318,7 +318,7 @@ func (c *PostgresClient) TerminateRunner(ctx context.Context, runnerID string, e
 		SET status = 'terminated', terminated_at = $1, exit_code = $2
 		WHERE id = $3
 	`, now, exitCode, runnerID)
-	
+
 	return err
 }
 
@@ -332,7 +332,7 @@ func (c *PostgresClient) GetRunner(ctx context.Context, runnerID string) (*types
 		       created_at, updated_at
 		FROM runners WHERE id = $1
 	`
-	
+
 	var runner types.Runner
 	var flagsJSON, capsJSON, envJSON []byte
 	var nodeID, sessionID sql.NullString
@@ -341,7 +341,7 @@ func (c *PostgresClient) GetRunner(ctx context.Context, runnerID string) (*types
 	var memoryMB, tokensUsed sql.NullInt64
 	var lastHeartbeat, terminatedAt sql.NullTime
 	var exitCode sql.NullInt32
-	
+
 	err := c.pool.QueryRow(ctx, query, runnerID).Scan(
 		&runner.ID, &runner.RuntimeType, &runner.RuntimeID, &nodeID,
 		&runner.ProjectName, &runner.ProjectPath, &runner.Status,
@@ -351,18 +351,18 @@ func (c *PostgresClient) GetRunner(ctx context.Context, runnerID string) (*types
 		&runner.StartedAt, &lastHeartbeat, &runner.HeartbeatTTL,
 		&terminatedAt, &exitCode, &runner.CreatedAt, &runner.UpdatedAt,
 	)
-	
+
 	if err != nil {
 		if err == pgx.ErrNoRows {
 			return nil, fmt.Errorf("runner not found: %s", runnerID)
 		}
 		return nil, err
 	}
-	
+
 	json.Unmarshal(flagsJSON, &runner.Flags)
 	json.Unmarshal(capsJSON, &runner.Capabilities)
 	json.Unmarshal(envJSON, &runner.Environment)
-	
+
 	if nodeID.Valid {
 		runner.NodeID = nodeID.String
 	}
@@ -391,7 +391,7 @@ func (c *PostgresClient) GetRunner(ctx context.Context, runnerID string) (*types
 		ec := int(exitCode.Int32)
 		runner.ExitCode = &ec
 	}
-	
+
 	return &runner, nil
 }
 
@@ -403,31 +403,31 @@ func (c *PostgresClient) GetActiveRunners(ctx context.Context, projectName strin
 		WHERE project_name = $1 AND status IN ('starting', 'running', 'paused')
 		ORDER BY started_at DESC
 	`
-	
+
 	rows, err := c.pool.Query(ctx, query, projectName)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	
+
 	var runners []*types.Runner
 	for rows.Next() {
 		var r types.Runner
 		var tokensUsed sql.NullInt64
-		
+
 		err := rows.Scan(&r.ID, &r.RuntimeType, &r.RuntimeID, &r.ProjectName,
 			&r.Status, &r.StartedAt, &tokensUsed)
 		if err != nil {
 			return nil, err
 		}
-		
+
 		if tokensUsed.Valid {
 			r.TokensUsed = tokensUsed.Int64
 		}
-		
+
 		runners = append(runners, &r)
 	}
-	
+
 	return runners, rows.Err()
 }
 
@@ -436,22 +436,23 @@ func (c *PostgresClient) ReconcileStaleRunners(ctx context.Context, ttlSeconds i
 	query := `
 		SELECT reconcile_stale_runners($1)
 	`
-	
+
 	rows, err := c.pool.Query(ctx, query, ttlSeconds)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	
+
 	var failedIDs []string
 	for rows.Next() {
-		var id, _ string
-		if err := rows.Scan(&id, &_); err != nil {
+		var id string
+		var unused string
+		if err := rows.Scan(&id, &unused); err != nil {
 			return nil, err
 		}
 		failedIDs = append(failedIDs, id)
 	}
-	
+
 	return failedIDs, rows.Err()
 }
 
@@ -469,19 +470,19 @@ func (c *PostgresClient) GetPendingOutboxEntries(ctx context.Context, limit int)
 		LIMIT $1
 		FOR UPDATE SKIP LOCKED
 	`
-	
+
 	rows, err := c.pool.Query(ctx, query, limit)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	
+
 	var entries []*types.OutboxEntry
 	for rows.Next() {
 		var entry types.OutboxEntry
 		var payloadJSON, metadataJSON []byte
 		var aggregateType, aggregateID sql.NullString
-		
+
 		err := rows.Scan(
 			&entry.ID, &entry.CreatedAt, &entry.EventID, &entry.ServiceName,
 			&aggregateType, &aggregateID, &entry.EventType,
@@ -491,20 +492,20 @@ func (c *PostgresClient) GetPendingOutboxEntries(ctx context.Context, limit int)
 		if err != nil {
 			return nil, err
 		}
-		
+
 		json.Unmarshal(payloadJSON, &entry.Payload)
 		json.Unmarshal(metadataJSON, &entry.Metadata)
-		
+
 		if aggregateType.Valid {
 			entry.AggregateType = aggregateType.String
 		}
 		if aggregateID.Valid {
 			entry.AggregateID = aggregateID.String
 		}
-		
+
 		entries = append(entries, &entry)
 	}
-	
+
 	return entries, rows.Err()
 }
 
@@ -540,16 +541,16 @@ func (c *PostgresClient) GetResourceQuota(ctx context.Context, projectName strin
 		FROM resource_quotas
 		WHERE project_name = $1
 	`
-	
+
 	var quota types.ResourceQuota
 	var maxMemory, maxTokens sql.NullInt64
 	var maxCPU sql.NullInt32
-	
+
 	err := c.pool.QueryRow(ctx, query, projectName).Scan(
 		&quota.ProjectName, &quota.MaxConcurrentRunners,
 		&maxMemory, &maxCPU, &maxTokens,
 	)
-	
+
 	if err != nil {
 		if err == pgx.ErrNoRows {
 			// Return default quota
@@ -560,7 +561,7 @@ func (c *PostgresClient) GetResourceQuota(ctx context.Context, projectName strin
 		}
 		return nil, err
 	}
-	
+
 	if maxMemory.Valid {
 		quota.MaxMemoryMB = maxMemory.Int64
 	}
@@ -570,7 +571,7 @@ func (c *PostgresClient) GetResourceQuota(ctx context.Context, projectName strin
 	if maxTokens.Valid {
 		quota.MaxTokensPerDay = maxTokens.Int64
 	}
-	
+
 	return &quota, nil
 }
 
@@ -582,7 +583,7 @@ func (c *PostgresClient) CreateSession(ctx context.Context, session *types.Sessi
 		INSERT INTO sessions (id, runner_id, project_name, started_at, resumable)
 		VALUES ($1, $2, $3, $4, $5)
 	`
-	
+
 	_, err := c.pool.Exec(ctx, query,
 		session.ID,
 		session.RunnerID,
@@ -590,7 +591,7 @@ func (c *PostgresClient) CreateSession(ctx context.Context, session *types.Sessi
 		session.StartedAt,
 		session.Resumable,
 	)
-	
+
 	return err
 }
 
@@ -603,12 +604,12 @@ func (c *PostgresClient) GetSession(ctx context.Context, sessionID string) (*typ
 		FROM sessions
 		WHERE id = $1
 	`
-	
+
 	var session types.Session
 	var endedAt, lastMessageAt sql.NullTime
 	var resumedFrom, summary, transcriptKey sql.NullString
 	var transcriptSize sql.NullInt64
-	
+
 	err := c.pool.QueryRow(ctx, query, sessionID).Scan(
 		&session.ID,
 		&session.RunnerID,
@@ -625,14 +626,14 @@ func (c *PostgresClient) GetSession(ctx context.Context, sessionID string) (*typ
 		&transcriptSize,
 		&session.CreatedAt,
 	)
-	
+
 	if err != nil {
 		if err == pgx.ErrNoRows {
 			return nil, fmt.Errorf("session not found: %s", sessionID)
 		}
 		return nil, err
 	}
-	
+
 	if endedAt.Valid {
 		session.EndedAt = &endedAt.Time
 	}
@@ -651,7 +652,7 @@ func (c *PostgresClient) GetSession(ctx context.Context, sessionID string) (*typ
 	if transcriptSize.Valid {
 		session.TranscriptSizeBytes = transcriptSize.Int64
 	}
-	
+
 	return &session, nil
 }
 
@@ -685,19 +686,19 @@ func (c *PostgresClient) GetResumableSessions(ctx context.Context, projectName s
 		ORDER BY last_message_at DESC NULLS LAST
 		LIMIT 10
 	`
-	
+
 	rows, err := c.pool.Query(ctx, query, projectName)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	
+
 	var sessions []*types.Session
 	for rows.Next() {
 		var s types.Session
 		var lastMessageAt sql.NullTime
 		var summary sql.NullString
-		
+
 		err := rows.Scan(
 			&s.ID,
 			&s.RunnerID,
@@ -712,17 +713,17 @@ func (c *PostgresClient) GetResumableSessions(ctx context.Context, projectName s
 		if err != nil {
 			return nil, err
 		}
-		
+
 		if lastMessageAt.Valid {
 			s.LastMessageAt = &lastMessageAt.Time
 		}
 		if summary.Valid {
 			s.Summary = summary.String
 		}
-		
+
 		sessions = append(sessions, &s)
 	}
-	
+
 	return sessions, rows.Err()
 }
 
@@ -758,10 +759,10 @@ func (c *PostgresClient) GetTokenBudget(ctx context.Context, scope, scopeID stri
 		ORDER BY period_start DESC
 		LIMIT 1
 	`
-	
+
 	var budget types.TokenBudget
 	var scopeIDVal sql.NullString
-	
+
 	err := c.pool.QueryRow(ctx, query, scope, scopeID).Scan(
 		&budget.ID,
 		&budget.Scope,
@@ -772,18 +773,18 @@ func (c *PostgresClient) GetTokenBudget(ctx context.Context, scope, scopeID stri
 		&budget.PeriodStart,
 		&budget.PeriodEnd,
 	)
-	
+
 	if err != nil {
 		if err == pgx.ErrNoRows {
 			return nil, nil // No budget configured
 		}
 		return nil, err
 	}
-	
+
 	if scopeIDVal.Valid {
 		budget.ScopeID = scopeIDVal.String
 	}
-	
+
 	return &budget, nil
 }
 
@@ -795,7 +796,7 @@ func (c *PostgresClient) CreateTokenBudget(ctx context.Context, budget *types.To
 	} else {
 		scopeID = budget.ScopeID
 	}
-	
+
 	_, err := c.pool.Exec(ctx, `
 		INSERT INTO token_budgets (
 			scope, scope_id, limit_tokens, used_tokens,
@@ -803,7 +804,7 @@ func (c *PostgresClient) CreateTokenBudget(ctx context.Context, budget *types.To
 		) VALUES ($1, $2, $3, $4, $5, $6, $7)
 	`, budget.Scope, scopeID, budget.LimitTokens, budget.UsedTokens,
 		budget.PeriodGranularity, budget.PeriodStart, budget.PeriodEnd)
-	
+
 	return err
 }
 
@@ -815,7 +816,7 @@ func (c *PostgresClient) IncrementTokenUsage(ctx context.Context, scope, scopeID
 	} else {
 		scopeIDVal = scopeID
 	}
-	
+
 	_, err := c.pool.Exec(ctx, `
 		UPDATE token_budgets
 		SET used_tokens = used_tokens + $1
@@ -823,7 +824,7 @@ func (c *PostgresClient) IncrementTokenUsage(ctx context.Context, scope, scopeID
 		  AND (scope_id = $3 OR ($3 IS NULL AND scope_id IS NULL))
 		  AND period_end > NOW()
 	`, tokens, scope, scopeIDVal)
-	
+
 	return err
 }
 
@@ -836,18 +837,18 @@ func (c *PostgresClient) GetExpiredBudgets(ctx context.Context, now time.Time) (
 		WHERE period_end <= $1
 		ORDER BY period_end
 	`
-	
+
 	rows, err := c.pool.Query(ctx, query, now)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	
+
 	var budgets []*types.TokenBudget
 	for rows.Next() {
 		var budget types.TokenBudget
 		var scopeIDVal sql.NullString
-		
+
 		err := rows.Scan(
 			&budget.ID,
 			&budget.Scope,
@@ -861,13 +862,13 @@ func (c *PostgresClient) GetExpiredBudgets(ctx context.Context, now time.Time) (
 		if err != nil {
 			return nil, err
 		}
-		
+
 		if scopeIDVal.Valid {
 			budget.ScopeID = scopeIDVal.String
 		}
-		
+
 		budgets = append(budgets, &budget)
 	}
-	
+
 	return budgets, rows.Err()
 }
