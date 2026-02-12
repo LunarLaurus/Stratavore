@@ -1,0 +1,601 @@
+/**
+ * CSS Components - Modular styling for Stratavore Web UI v4
+ */
+
+/* Base component styles */
+.card {
+    background: #2a2a2a;
+    border: 1px solid #00ff00;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 255, 0, 0.1);
+    margin-bottom: 20px;
+}
+
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.card-header h3 {
+    color: #00ff00;
+    margin: 0;
+    font-size: 1.2em;
+}
+
+.card-controls {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.loading {
+    text-align: center;
+    padding: 20px;
+    color: #ffff00;
+}
+
+.error {
+    background: #3a2a2a;
+    border-color: #ff0000;
+    color: #ff0000;
+}
+
+/* Button styles */
+.refresh-btn, .primary-btn, .secondary-btn, .batch-btn, .mini-btn, .danger-btn {
+    background: #00ff00;
+    color: #000;
+    border: none;
+    padding: 8px 16px;
+    cursor: pointer;
+    border-radius: 5px;
+    font-weight: bold;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 0.9em;
+}
+
+.refresh-btn:hover, .primary-btn:hover, .secondary-btn:hover, .batch-btn:hover, .mini-btn:hover {
+    background: #00cc00;
+    transform: scale(1.05);
+}
+
+.danger-btn {
+    background: #ff0000;
+    color: #fff;
+}
+
+.danger-btn:hover {
+    background: #cc0000;
+}
+
+.secondary-btn {
+    background: #666;
+    color: #fff;
+}
+
+.secondary-btn:hover {
+    background: #555;
+}
+
+.batch-btn {
+    background: #ff9900;
+    color: #000;
+}
+
+.batch-btn:hover {
+    background: #cc7700;
+}
+
+.mini-btn {
+    padding: 2px 8px;
+    font-size: 0.75em;
+    background: #333;
+    color: #0f0;
+    border: 1px solid #555;
+}
+
+.mini-btn:hover {
+    background: #444;
+}
+
+/* Form controls */
+.search-input, .filter-select {
+    padding: 6px 12px;
+    border: 1px solid #00ff00;
+    background: #1a1a1a;
+    color: #00ff00;
+    border-radius: 5px;
+    font-family: 'Courier New', monospace;
+}
+
+.search-input:focus, .filter-select:focus {
+    outline: none;
+    border-color: #ffff00;
+    box-shadow: 0 0 5px rgba(255, 255, 0, 0.3);
+}
+
+/* Selection info */
+.selection-info {
+    background: #1a1a1a;
+    border: 1px solid #ffff00;
+    padding: 8px 12px;
+    margin: 10px 0;
+    border-radius: 5px;
+    color: #ffff00;
+    font-size: 0.9em;
+}
+
+/* Overview Grid */
+.overview-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 15px;
+    margin-top: 15px;
+}
+
+.stat-item {
+    text-align: center;
+    padding: 15px 10px;
+    background: #333;
+    border-radius: 5px;
+    border-left: 3px solid #00ff00;
+}
+
+.stat-value {
+    font-size: 1.5em;
+    font-weight: bold;
+    color: #00ff00;
+    margin-bottom: 5px;
+}
+
+.stat-label {
+    font-size: 0.8em;
+    color: #ccc;
+}
+
+.stat-pending { border-left-color: #ffff00; color: #ffff00; }
+.stat-progress { border-left-color: #ff9900; color: #ff9900; }
+.stat-completed { border-left-color: #28a745; color: #28a745; }
+.stat-working { border-left-color: #00ffff; color: #00ffff; }
+.stat-idle { border-left-color: #0066ff; color: #0066ff; }
+
+/* Jobs List */
+.job-list {
+    max-height: 600px;
+    overflow-y: auto;
+    margin: 15px 0;
+}
+
+.job {
+    background: #333;
+    margin: 15px 0;
+    padding: 15px;
+    border-left: 4px solid #00ff00;
+    border-radius: 4px;
+    transition: all 0.3s ease;
+}
+
+.job:hover {
+    background: #444;
+    transform: translateX(5px);
+}
+
+.job.selected {
+    background: #444;
+    border-left-color: #ffff00;
+}
+
+.job-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.job-title {
+    font-weight: bold;
+    font-size: 1.1em;
+    color: #00ff00;
+}
+
+.job-meta {
+    color: #ccc;
+    font-size: 0.9em;
+}
+
+.job-meta p {
+    margin: 3px 0;
+}
+
+.job-meta strong {
+    color: #fff;
+}
+
+.job.high { border-left-color: #ff0000; }
+.job.medium { border-left-color: #ffff00; }
+.job.low { border-left-color: #0066ff; }
+.job.in-progress { background: #444; border-left-color: #00ffff; }
+.job.completed { background: #2d4a2d; opacity: 0.8; }
+
+/* Pagination */
+.pagination {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-top: 1px solid #444;
+    margin-top: 15px;
+}
+
+.pagination-info {
+    color: #ccc;
+    font-size: 0.9em;
+}
+
+.pagination button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.sort-btn {
+    background: #444;
+    color: #00ff00;
+    border: 1px solid #00ff00;
+    padding: 6px 12px;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.sort-btn:hover {
+    background: #00ff00;
+    color: #000;
+}
+
+/* Agent Status */
+.agents-container {
+    max-height: 500px;
+    overflow-y: auto;
+    margin: 15px 0;
+}
+
+.agent-item {
+    background: #333;
+    margin: 10px 0;
+    padding: 15px;
+    border-left: 4px solid #00ffff;
+    border-radius: 4px;
+    transition: all 0.3s ease;
+}
+
+.agent-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0, 255, 255, 0.2);
+}
+
+.agent-item.selected {
+    background: #444;
+    border-left-color: #ffff00;
+}
+
+.agent-item.working {
+    border-left-color: #00ff00;
+    background: #444;
+}
+
+.agent-item.idle {
+    border-left-color: #0066ff;
+}
+
+.agent-item.spawning {
+    border-left-color: #ffff00;
+    animation: pulse 2s infinite;
+}
+
+.agent-item.error {
+    border-left-color: #ff0000;
+}
+
+.agent-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+}
+
+.agent-emoji {
+    font-size: 1.2em;
+}
+
+.agent-personality {
+    color: #888;
+    font-size: 0.85em;
+}
+
+.agent-actions {
+    margin-left: auto;
+    display: flex;
+    gap: 5px;
+}
+
+.agent-details {
+    color: #ccc;
+    font-size: 0.9em;
+}
+
+.agent-details p {
+    margin: 5px 0;
+}
+
+.agent-details strong {
+    color: #fff;
+}
+
+.no-agents {
+    text-align: center;
+    padding: 40px;
+    color: #888;
+    background: #2a2a2a;
+    border-radius: 5px;
+}
+
+/* Control Panel */
+.control-panel {
+    background: #1e1e1e;
+    border: 1px solid #444;
+    border-radius: 6px;
+    padding: 15px;
+    margin: 15px 0;
+}
+
+.control-panel h4 {
+    color: #00ffff;
+    margin: 0 0 15px 0;
+}
+
+.control-section {
+    margin-bottom: 20px;
+}
+
+.control-section h5 {
+    color: #00ff00;
+    margin: 0 0 10px 0;
+}
+
+.control-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+}
+
+.control-form {
+    background: #2a2a2a;
+    padding: 12px;
+    border-radius: 5px;
+    border: 1px solid #333;
+}
+
+.control-form h6 {
+    color: #fff;
+    font-weight: bold;
+    margin: 0 0 8px 0;
+}
+
+.control-form input,
+.control-form select {
+    width: 100%;
+    margin-bottom: 6px;
+    padding: 6px;
+    background: #1a1a1a;
+    color: #0f0;
+    border: 1px solid #444;
+    border-radius: 3px;
+    font-family: 'Courier New', monospace;
+}
+
+.control-form button {
+    width: 100%;
+    padding: 8px;
+}
+
+.batch-controls {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+/* Time Sessions */
+.time-sessions-container {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.time-session {
+    background: #333;
+    margin: 15px 0;
+    padding: 15px;
+    border-left: 4px solid #00ffff;
+    border-radius: 4px;
+    transition: all 0.3s ease;
+}
+
+.time-session.active {
+    border-left-color: #00ff00;
+    background: #444;
+    animation: pulse 2s infinite;
+}
+
+.session-title {
+    font-weight: bold;
+    margin-bottom: 8px;
+    color: #00ffff;
+}
+
+.session-details p {
+    margin: 5px 0;
+    font-size: 0.9em;
+    color: #ccc;
+}
+
+.session-details strong {
+    color: #fff;
+}
+
+/* Activity Log */
+.agent-todos-container {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.todo-item {
+    border: 1px solid #444;
+    border-radius: 4px;
+    margin: 10px 0;
+    padding: 12px;
+    background: #2a2a2a;
+}
+
+.todo-item.completed {
+    border-left: 4px solid #28a745;
+    background: #1e3a1e;
+}
+
+.todo-item.in-progress {
+    border-left: 4px solid #ffc107;
+    background: #3a3a1e;
+}
+
+.todo-item.cancelled {
+    border-left: 4px solid #dc3545;
+    background: #3a1e1e;
+}
+
+.todo-item.pending {
+    border-left: 4px solid #6c757d;
+    background: #2a2a2a;
+}
+
+.todo-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px;
+}
+
+.todo-title {
+    font-weight: bold;
+    color: #fff;
+}
+
+.todo-agent {
+    color: #6c757d;
+    font-size: 0.9em;
+}
+
+.todo-description {
+    color: #ccc;
+    margin-bottom: 8px;
+    font-size: 0.9em;
+}
+
+.todo-meta {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.8em;
+    color: #888;
+}
+
+.todo-task {
+    color: #007bff;
+}
+
+.no-todos {
+    color: #6c757d;
+    text-align: center;
+    padding: 20px;
+}
+
+/* Animations */
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.8; }
+    100% { opacity: 1; }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .card-header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .card-controls {
+        justify-content: center;
+    }
+    
+    .overview-grid {
+        grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+        gap: 10px;
+    }
+    
+    .control-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .batch-controls {
+        flex-direction: column;
+    }
+    
+    .job-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .agent-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .agent-actions {
+        margin-left: 0;
+        margin-top: 10px;
+    }
+}
+
+/* Accessibility */
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* Focus indicators for keyboard navigation */
+button:focus,
+input:focus,
+select:focus {
+    outline: 2px solid #ffff00;
+    outline-offset: 2px;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    .card {
+        border-width: 2px;
+    }
+    
+    .job,
+    .agent-item,
+    .time-session,
+    .todo-item {
+        border-width: 2px;
+    }
+}
