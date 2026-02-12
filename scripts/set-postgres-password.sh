@@ -18,7 +18,7 @@ echo ""
 read -s -p "Confirm new password: " CONFIRM_PASS
 echo ""
 
-if [ "$NEW_PASS" != "$CONFIRM_PASS" ]; then
+if [ "$NEW_PASS"!= "$CONFIRM_PASS" ]; then
     echo "Error: Passwords do not match"
     exit 1
 fi
@@ -26,4 +26,4 @@ fi
 # Update password explicitly on the correct database
 docker exec "$PG_CONTAINER" psql -U "$PG_USER" -d stratavore_state -c "ALTER USER $PG_USER WITH PASSWORD '$NEW_PASS';"
 
-echo "✓ Password updated successfully for user '$PG_USER'"
+echo "[OK] Password updated successfully for user '$PG_USER'"

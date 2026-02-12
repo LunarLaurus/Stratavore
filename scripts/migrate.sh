@@ -21,8 +21,8 @@ psql_cmd() {
 }
 
 echo "==> Running migrations ($DIRECTION)"
-echo "    Database: $DB_NAME"
-echo "    Host: $DB_HOST:$DB_PORT"
+echo " Database: $DB_NAME"
+echo " Host: $DB_HOST:$DB_PORT"
 echo ""
 
 if [ "$DIRECTION" = "up" ]; then
@@ -31,9 +31,9 @@ if [ "$DIRECTION" = "up" ]; then
         if [ -f "$migration" ]; then
             echo "Applying: $(basename "$migration")"
             if psql_cmd -f "$migration"; then
-                echo "  ✓ Success"
+                echo " [OK] Success"
             else
-                echo "  ✗ Failed"
+                echo " [FAIL] Failed"
                 exit 1
             fi
         fi
@@ -44,9 +44,9 @@ elif [ "$DIRECTION" = "down" ]; then
         if [ -f "$migration" ]; then
             echo "Rolling back: $(basename "$migration")"
             if psql_cmd -f "$migration"; then
-                echo "  ✓ Success"
+                echo " [OK] Success"
             else
-                echo "  ✗ Failed"
+                echo " [FAIL] Failed"
                 exit 1
             fi
         fi
@@ -58,4 +58,4 @@ else
 fi
 
 echo ""
-echo "✓ Migrations complete"
+echo "[OK] Migrations complete"

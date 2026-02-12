@@ -1,10 +1,10 @@
-# Stratavore for Windows 🪟
+# Stratavore for Windows 
 
 Quick start guide for Windows users.
 
 ---
 
-## ⚡ Quick Start (5 Minutes)
+## Quick Start (5 Minutes)
 
 ### 1. Prerequisites
 
@@ -34,9 +34,9 @@ build.bat
 
 **Output:**
 ```
-bin\stratavore.exe        (CLI)
-bin\stratavored.exe       (Daemon)
-bin\stratavore-agent.exe  (Agent wrapper)
+bin\stratavore.exe (CLI)
+bin\stratavored.exe (Daemon)
+bin\stratavore-agent.exe (Agent wrapper)
 ```
 
 ---
@@ -48,16 +48,16 @@ Edit `configs\stratavore.yaml`:
 ```yaml
 database:
   postgresql:
-    host: localhost          # Or your PostgreSQL server
+    host: localhost # Or your PostgreSQL server
     port: 5432
     database: stratavore_state
     user: stratavore
-    password: your_password  # CHANGE THIS!
-    sslmode: disable         # Use 'require' in production
+    password: your_password # CHANGE THIS!
+    sslmode: disable # Use 'require' in production
 
 docker:
   rabbitmq:
-    host: localhost          # Or your RabbitMQ server
+    host: localhost # Or your RabbitMQ server
     port: 5672
     user: guest
     password: guest
@@ -73,7 +73,7 @@ docker:
 .\bin\stratavored.exe
 
 # Or in background (PowerShell)
-Start-Process -NoNewWindow .\bin\stratavored.exe
+Start-Process -NoNewWindow.\bin\stratavored.exe
 ```
 
 **Use CLI (New Terminal):**
@@ -96,7 +96,7 @@ Start-Process -NoNewWindow .\bin\stratavored.exe
 
 ---
 
-## 🐳 Docker Option (Easiest)
+## Docker Option (Easiest)
 
 ### Use Docker for Infrastructure
 
@@ -120,7 +120,7 @@ Then run Stratavore daemon on Windows:
 
 ---
 
-## 🔧 Configuration
+## Configuration
 
 ### Environment Variables
 
@@ -144,7 +144,7 @@ bin\stratavored.exe
 
 ---
 
-## 🎯 Common Issues
+## Common Issues
 
 ### "Cannot connect to daemon"
 
@@ -181,7 +181,7 @@ GRANT ALL PRIVILEGES ON DATABASE stratavore_state TO stratavore;
 
 ---
 
-## 📁 File Locations
+## File Locations
 
 ### Windows Paths
 
@@ -207,7 +207,7 @@ bin\stratavore-agent.exe
 
 ---
 
-## 🚀 Advanced: Run as Windows Service
+## Advanced: Run as Windows Service
 
 ### Using NSSM (Non-Sucking Service Manager)
 
@@ -234,7 +234,7 @@ nssm remove stratavored confirm
 
 ---
 
-## 🔍 Debugging
+## Debugging
 
 ### Enable Detailed Logging
 
@@ -254,7 +254,7 @@ $env:LOG_LEVEL = "debug"
 .\bin\stratavored.exe > daemon.log 2>&1
 
 # View log file
-Get-Content daemon.log -Wait  # Like tail -f
+Get-Content daemon.log -Wait # Like tail -f
 ```
 
 ### Check API Endpoint
@@ -269,13 +269,13 @@ curl http://localhost:50051/health
 
 ---
 
-## 📊 Monitoring
+## Monitoring
 
 ### Grafana Dashboard
 
 If using Docker Compose:
 
-**Access:** http://localhost:3000  
+**Access:** http://localhost:3000 
 **Login:** admin / admin
 
 **Available:**
@@ -285,7 +285,7 @@ If using Docker Compose:
 
 ---
 
-## 🎓 Tips for Windows Users
+## Tips for Windows Users
 
 ### Use PowerShell (Not CMD)
 
@@ -331,15 +331,15 @@ stratavore new my-project
 
 ---
 
-## 🐛 Known Windows-Specific Issues
+## Known Windows-Specific Issues
 
-### None Currently! ✅
+### None Currently! COMPLETE
 
 v1.2 was specifically tested on Windows.
 
 ---
 
-## 📞 Getting Help
+## Getting Help
 
 ### Check daemon is running:
 ```powershell
@@ -360,7 +360,7 @@ psql -h localhost -U stratavore -d stratavore_state -c "\dt"
 
 ---
 
-## 🎉 You're Ready!
+## You're Ready!
 
 Stratavore works great on Windows. Happy orchestrating!
 

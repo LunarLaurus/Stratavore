@@ -1,14 +1,14 @@
-# Sprint Complete: Phase 9 — Docker Proto Builder + Security + Cache + Grafana ✅
+# Sprint Complete: Phase 9 — Docker Proto Builder + Security + Cache + Grafana COMPLETE
 
-**Date:** February 11, 2026  
-**Status:** COMPLETE  
-**Version:** v1.4.0  
+**Date:** February 11, 2026 
+**Status:** COMPLETE 
+**Version:** v1.4.0 
 
 ---
 
-## 🎯 Sprint Objectives — ALL COMPLETE
+## Sprint Objectives — ALL COMPLETE
 
-### ✅ 1. Cache Manager (`internal/cache/manager.go`)
+### COMPLETE 1. Cache Manager (`internal/cache/manager.go`)
 **Status:** COMPLETE
 
 The `RedisCache` from Phase 6 had no callers because the manager layer was missing.
@@ -24,7 +24,7 @@ Added `cache.Manager` with:
 
 ---
 
-### ✅ 2. Auth Package — JWT + Rate Limiter (`internal/auth/`)
+### COMPLETE 2. Auth Package — JWT + Rate Limiter (`internal/auth/`)
 **Status:** COMPLETE — Foundation for Phase 7 security hardening
 
 **`internal/auth/jwt.go`**
@@ -46,7 +46,7 @@ Added `cache.Manager` with:
 
 ---
 
-### ✅ 3. Docker Proto Builder (`Dockerfile.builder` + `docker-compose.builder.yml`)
+### COMPLETE 3. Docker Proto Builder (`Dockerfile.builder` + `docker-compose.builder.yml`)
 **Status:** COMPLETE
 
 Addresses the long-standing "gRPC stubs need `make proto` to be run locally" problem
@@ -56,7 +56,7 @@ by providing a fully self-contained Docker build pipeline.
 | Stage | Purpose |
 |-------|---------|
 | `proto-toolchain` | Installs `protoc` 25.3 + `protoc-gen-go` + `protoc-gen-go-grpc` |
-| `builder` | Downloads Go modules, generates `.pb.go` stubs, compiles all 3 binaries, runs `go test ./...` |
+| `builder` | Downloads Go modules, generates `.pb.go` stubs, compiles all 3 binaries, runs `go test./...` |
 | `export` | Scratch-like stage; default CMD lists built artefacts; bind-mount `./dist` to extract bins |
 | `runtime` | Minimal Alpine daemon image with gRPC compiled in (replaces `Dockerfile.daemon` for gRPC deployments) |
 
@@ -67,16 +67,16 @@ by providing a fully self-contained Docker build pipeline.
 
 **New Makefile targets:**
 ```bash
-make docker-build-proto    # build image + export bins to ./dist
-make docker-up-grpc        # full stack with gRPC daemon
-make docker-proto-shell    # interactive protoc dev shell
+make docker-build-proto # build image + export bins to./dist
+make docker-up-grpc # full stack with gRPC daemon
+make docker-proto-shell # interactive protoc dev shell
 ```
 
 **Files created/modified:** `Dockerfile.builder`, `docker-compose.builder.yml`, `Makefile`
 
 ---
 
-### ✅ 4. Grafana Dashboards
+### COMPLETE 4. Grafana Dashboards
 **Status:** COMPLETE — upgraded from stub to production-grade
 
 **`configs/grafana/dashboards/stratavore-overview.json`** — rewritten:
@@ -99,7 +99,7 @@ Both dashboards are auto-provisioned via the existing `dashboards.yml` config.
 
 ---
 
-## 📊 Version: v1.4.0
+## Version: v1.4.0
 
 | Component | Previous | Now |
 |-----------|----------|-----|
@@ -110,12 +110,12 @@ Both dashboards are auto-provisioned via the existing `dashboards.yml` config.
 
 ---
 
-## 🚀 Quick Start (Updated)
+## Quick Start (Updated)
 
 ### HTTP build (existing workflow — unchanged)
 ```bash
-make build              # fallback HTTP mode, no protoc required
-docker compose up       # infra + HTTP daemon
+make build # fallback HTTP mode, no protoc required
+docker compose up # infra + HTTP daemon
 ```
 
 ### gRPC build (new)
@@ -123,7 +123,7 @@ docker compose up       # infra + HTTP daemon
 # Option A: build locally if protoc is installed
 make proto && make build
 
-# Option B: build inside Docker, extract bins to ./dist
+# Option B: build inside Docker, extract bins to./dist
 make docker-build-proto
 
 # Option C: full gRPC stack via Compose
@@ -141,7 +141,7 @@ make docker-proto-shell
 ```yaml
 # configs/stratavore.yaml
 api:
-  auth_secret: "your-secret-here"   # leave empty to disable
+  auth_secret: "your-secret-here" # leave empty to disable
   rate_limit:
     requests_per_minute: 300
     burst: 50
@@ -149,7 +149,7 @@ api:
 
 ---
 
-## 🎯 Remaining Work (Updated: ~10 hours)
+## Remaining Work (Updated: ~10 hours)
 
 ### Phase 10 (Security — 3–4 h)
 - Wire `auth.Middleware` and `RateLimitMiddleware` into `internal/daemon/http_server.go`
