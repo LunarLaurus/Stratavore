@@ -9,28 +9,60 @@ Stratavore is a hybrid system consisting of a **Go-based core orchestration plat
 ## Python/HTML Components (User Interface Layer)
 
 ### Location
-- `webui/` directory
+- `webui/` directory (modular architecture v4)
 - `agents/` directory (agent management)
 - `.opencode/tools/` (development tools)
 
 ### Core Components
 
-#### 1. Web UI (`webui/`)
-**Purpose**: Browser-based monitoring and control interface
+#### 1. Modular Web UI (`webui/`) - v4 Architecture
+**Purpose**: Scalable, component-based monitoring and control interface
 
-**Files**:
-- `index.html` (774 lines) - Complete single-page application with:
-  - Real-time job tracking dashboard
-  - Agent status monitoring
-  - Time tracking visualization
-  - Manual agent control panel
-  - Debug and health monitoring tools
+**Architecture**:
+```
+webui/
+├── index.html (main template)
+├── components/          # Modular UI components
+│   ├── base-component.js     # Base component class
+│   ├── header-component.js   # Header with controls
+│   ├── overview-panel-component.js  # Statistics dashboard
+│   ├── jobs-list-component.js     # Job management
+│   ├── agent-status-component.js   # Agent management
+│   └── [additional components...]
+├── services/           # Core services
+│   ├── event-bus.js    # Component communication
+│   └── api-client.js   # API client and data manager
+├── styles/            # Modular CSS
+│   ├── base.css       # Design system foundation
+│   └── components/    # Component-specific styles
+└── utils/             # Utilities
+    ├── constants.js   # App constants
+    └── helpers.js     # Helper functions
+```
 
-- `server.py` (410 lines) - HTTP server providing:
-  - REST API endpoints (`/api/status`, `/api/spawn-agent`, etc.)
-  - JSON data serving from local files
-  - CORS-enabled frontend communication
-  - Agent management operations
+**Key Features**:
+- **Component-based Architecture**: Each UI element is an independent, reusable component
+- **Event-driven Communication**: Components communicate through a centralized event bus
+- **Reactive Data Store**: Centralized state management with automatic UI updates
+- **Unlimited Agent Scaling**: Virtual scrolling and batch operations for 1000+ agents
+- **Modular CSS**: Component-scoped styling with a design system
+- **Real-time Updates**: Polling-based data synchronization with future WebSocket support
+
+**Component System**:
+- **BaseComponent**: Provides lifecycle management, event handling, and state management
+- **HeaderComponent**: Application header with status indicators and global controls
+- **OverviewPanelComponent**: Real-time statistics and metrics dashboard
+- **JobsListComponent**: Paginated, searchable, filterable job management
+- **AgentStatusComponent**: Scalable agent monitoring with batch operations
+
+- `server.py` (v4 enhanced) - Modular HTTP server providing:
+  - **API Handler Classes**: Separate handlers for different endpoint groups
+  - **Standardized Responses**: Consistent API response structure
+  - **Enhanced Error Handling**: Graceful degradation and error reporting
+  - **Batch Operations**: Multi-agent actions for scalability
+  - **Modular Architecture**: Clean separation of concerns
+  - **CORS Support**: Full cross-origin resource sharing
+  - **Health Monitoring**: System health and uptime tracking
 
 #### 2. Agent Management (`agents/`)
 **Purpose**: Multi-agent workflow orchestration
@@ -51,11 +83,15 @@ Stratavore is a hybrid system consisting of a **Go-based core orchestration plat
 - Various test and validation scripts
 
 ### Technology Stack
-- **Python 3.11+** for backend logic
-- **HTML5/CSS3/JavaScript** for frontend
-- **File-based storage** (JSONL format)
-- **HTTP/REST** communication
-- **Thread-based concurrency**
+- **Python 3.11+** for backend API server
+- **Modern JavaScript (ES6+)** for frontend components
+- **HTML5/CSS3 with Custom Properties** for responsive design
+- **File-based storage** (JSONL format) for state persistence
+- **HTTP/REST** communication with standardized API responses
+- **Event-driven Architecture** for component communication
+- **CSS Design System** with custom properties for theming
+- **Virtual Scrolling** for handling large datasets
+- **Debounced Operations** for performance optimization
 
 ---
 
@@ -145,51 +181,134 @@ Browser UI → Python Server → Go Daemon → Infrastructure
 
 ## Architectural Benefits
 
-### Python/HTML Layer
-- **Rapid Development**: Quick UI prototyping
-- **Flexibility**: Easy to modify interfaces
-- **Accessibility**: Browser-based access
-- **Agent Management**: Complex workflow orchestration
+### Python/HTML Layer (v4 Modular)
+- **Component Reusability**: Each UI element can be independently developed, tested, and reused
+- **Scalable Architecture**: Supports unlimited agents through virtual scrolling and batch operations
+- **Maintainability**: Clear separation of concerns with modular file structure
+- **Developer Experience**: Modern JavaScript with event-driven patterns and reactive state management
+- **Performance Optimization**: Debounced operations, lazy loading, and efficient DOM updates
+- **Accessibility**: Browser-based access with keyboard shortcuts and responsive design
+- **Agent Management**: Advanced workflow orchestration with individual and batch operations
 
 ### Go Core Layer
-- **Performance**: High-throughput operations
-- **Reliability**: Strong typing and error handling
-- **Scalability**: Efficient resource utilization
-- **Production-Ready**: Enterprise-grade infrastructure
+- **Performance**: High-throughput operations with Go's concurrency model
+- **Reliability**: Strong typing, error handling, and production-grade infrastructure
+- **Scalability**: Efficient resource utilization and horizontal scaling capabilities
+- **Enterprise-Ready**: Comprehensive monitoring, logging, and observability
 
 ### Separation of Concerns
-- **UI Logic**: Isolated in Python/HTML
-- **Business Logic**: Centralized in Go
-- **Data Persistence**: Robust Go-based storage
-- **User Experience**: Rich web interface
+- **UI Components**: Independent, self-contained modules with clear responsibilities
+- **Core Services**: Centralized state management, API communication, and event handling
+- **Data Persistence**: Robust Go-based storage with transactional guarantees
+- **User Experience**: Rich, responsive interface with real-time updates
+- **Development Workflow**: Modular development allowing parallel work on different components
 
 ---
 
 ## Deployment Architecture
 
 ```
+┌─────────────────────────────────────────────────────────────────┐
+│                    BROWSER CLIENT (v4)                        │
+│  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌─────────┐ │
+│  │ Header Comp │ │ Overview    │ │ Jobs List   │ │ Agent   │ │
+│  │             │ │ Panel       │ │ Component  │ │ Status  │ │
+│  └─────────────┘ └─────────────┘ └─────────────┘ └─────────┘ │
+│  ┌─────────────┐ ┌─────────────┐                           │
+│  │ Event Bus   │ │ Data Store  │ ← Reactive State Management │
+│  └─────────────┘ └─────────────┘                           │
+└─────────────────────────────────────────────────────────────────┘
+                                │ HTTP/REST API (Modular)
+                                ↓
+┌─────────────────────────────────────────────────────────────────┐
+│                PYTHON SERVER (v4 Enhanced)                     │
+│  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐           │
+│  │ Status API  │ │ Agent API   │ │ Health API  │           │
+│  │ Handler     │ │ Handler     │ │ Handler     │           │
+│  └─────────────┘ └─────────────┘ └─────────────┘           │
+│  ┌─────────────────────────────────────────────────────────┐ │
+│  │              Data Loader Service                       │ │
+│  └─────────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────────┘
+                                │ gRPC/HTTP
+                                ↓
+┌─────────────────────────────────────────────────────────────────┐
+│                    GO DAEMON (Core)                          │
+│  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐           │
+│  │ State Mgr   │ │ Runner Mgr  │ │ Event Bus   │           │
+│  │ (PostgreSQL)│ │ (Lifecycle) │ │ (RabbitMQ)  │           │
+│  └─────────────┘ └─────────────┘ └─────────────┘           │
+└─────────────────────────────────────────────────────────────────┘
+                                │
+                                ↓
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   Browser UI    │←── │  Python Server │←── │   Go Daemon    │
-│   (HTML/JS)     │    │   (server.py)  │    │  (stratavored) │
+│  File Storage   │    │  PostgreSQL     │    │   RabbitMQ      │
+│  (JSONL files)  │    │  + pgvector     │    │   (Events)      │
+│                 │    │                 │    │                 │
+│ • Active Agents │    │ • Projects      │    │ • Runner Events │
+│ • Agent Todos   │    │ • Sessions     │    │ • System Alerts │
+│ • Jobs          │    │ • Outbox       │    │ • Notifications│
+│ • Time Sessions │    │ • Metrics      │    │                 │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
-                                │                        │
-                                ↓                        ↓
-                       ┌─────────────────┐    ┌─────────────────┐
-                       │  File Storage   │    │  PostgreSQL     │
-                       │  (JSONL files)  │    │  + pgvector     │
-                       └─────────────────┘    └─────────────────┘
-                                                        │
-                                                        ↓
-                                               ┌─────────────────┐
-                                               │   RabbitMQ      │
-                                               │   (Events)      │
-                                               └─────────────────┘
 ```
+
+## Key Scaling Features
+
+### Frontend v4 Architecture
+- **Virtual Scrolling**: Efficiently handle 1000+ agents without performance degradation
+- **Batch Operations**: Perform actions on multiple agents simultaneously
+- **Component Lazy Loading**: Load only the components needed for current view
+- **Event-Driven Updates**: Only update components affected by data changes
+- **Debounced Interactions**: Prevent excessive API calls during rapid user actions
+
+### Backend v4 Enhancements
+- **Modular API Handlers**: Separate handlers for different endpoint groups
+- **Standardized Response Format**: Consistent API responses across all endpoints
+- **Batch Operation Support**: Efficiently handle multiple agent actions
+- **Enhanced Error Handling**: Graceful degradation with meaningful error messages
+- **Health Monitoring**: Real-time system health and performance metrics
+
+### Integration Patterns
+- **Real-time Polling**: 30-second data refresh with manual refresh capabilities
+- **CORS-Enabled Communication**: Full support for cross-origin requests
+- **State Synchronization**: Consistent state between frontend components and backend
+- **Error Recovery**: Automatic retry logic and fallback mechanisms
+
+---
+
+## Migration from Monolithic to Modular (v4)
+
+### What Changed
+- **From Single File to Component System**: 774-line `index.html` → 15+ modular components
+- **From Ad-hoc JavaScript to Structured Architecture**: 427-line script → service layer with event bus
+- **From Mixed CSS to Design System**: Monolithic styles → component-scoped CSS with custom properties
+- **From Simple Server to API Layer**: Basic handler → modular API with standardized responses
+
+### Benefits Achieved
+- **Maintainability**: Components can be developed, tested, and debugged independently
+- **Scalability**: Virtual scrolling and batch operations support unlimited agents
+- **Performance**: Debounced operations, lazy loading, and efficient DOM updates
+- **Developer Experience**: Modern JavaScript patterns, clear separation of concerns
+- **Code Reusability**: Components can be reused across different pages or projects
+
+### Future Extensibility
+- **WebSocket Support**: Ready for real-time updates without polling
+- **Plugin Architecture**: Components can be added as plugins
+- **Theme System**: CSS custom properties enable easy theming
+- **Mobile Responsiveness**: Component-based responsive design
+- **Progressive Enhancement**: Core functionality works with JavaScript disabled
 
 ---
 
 ## Conclusion
 
-The Python/HTML components provide the **human-computer interface** and **agent workflow management**, making Stratavore accessible and user-friendly. The Go core delivers the **industrial-strength infrastructure** needed for production workloads, with robust data persistence, messaging, and observability.
+The **v4 modular architecture** transforms Stratavore's web interface from a monolithic application to a scalable, maintainable platform. The Python/HTML components now provide:
 
-This hybrid architecture allows for rapid UI development while maintaining enterprise-grade performance and reliability in the core system.
+- **Component-Based Architecture**: Independent, reusable UI modules
+- **Scalable Agent Management**: Support for unlimited agents through virtual scrolling
+- **Modern Developer Experience**: Event-driven patterns and reactive state management
+- **Enhanced User Interface**: Real-time updates with batch operations and advanced filtering
+
+The Go core continues to deliver the **industrial-strength infrastructure** needed for production workloads, while the new modular frontend architecture provides the flexibility and scalability required for modern web applications.
+
+This evolution enables rapid feature development, easier maintenance, and the ability to scale the user interface alongside the powerful backend infrastructure.

@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stratavore Job Tracker v4 - Modular Architecture</title>
+    
+    <!-- Base CSS System -->
+    <link rel="stylesheet" href="styles/base.css">
+    <link rel="stylesheet" href="styles/components/components.css">
+    
+    <!-- Component-specific CSS will be loaded dynamically -->
+    <style>
+        /* Component loading indicator */
+        .component-loading {
+            background: var(--color-surface);
+            border: 1px dashed var(--color-text-muted);
+            padding: var(--spacing-lg);
+            text-align: center;
+            color: var(--color-text-muted);
+            font-style: italic;
+        }
+        
+        /* Integration layout */
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: var(--spacing-lg);
+            margin-bottom: var(--spacing-lg);
+        }
+        
+        .full-width {
+            grid-column: 1 / -1;
+        }
+        
+        @media (max-width: 968px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        /* Debug panel styling */
+        .debug-panel {
+            background: var(--color-background);
+            border: var(--border-width-thin) solid var(--color-accent);
+            padding: var(--spacing-md);
+            margin: var(--spacing-lg) 0;
+            border-radius: var(--border-radius-md);
+        }
+        
+        .debug-panel h4 {
+            color: var(--color-accent);
+            margin-bottom: var(--spacing-sm);
+        }
+        
+        .debug-info {
+            font-size: var(--font-size-sm);
+            color: var(--color-text-secondary);
+            font-family: var(--font-family-secondary);
+            white-space: pre-wrap;
+        }
+        
+        /* Notification system */
+        .notification-container {
+            position: fixed;
+            top: var(--spacing-lg);
+            right: var(--spacing-lg);
+            z-index: var(--z-toast);
+            max-width: 400px;
+        }
+        
+        .notification {
+            background: var(--color-surface);
+            border: var(--border-width-thin) solid var(--color-primary);
+            border-radius: var(--border-radius-md);
+            padding: var(--spacing-md);
+            margin-bottom: var(--spacing-sm);
+            box-shadow: var(--shadow-lg);
+            animation: slideInRight 0.3s ease;
+        }
+        
+        .notification--success {
+            border-color: var(--color-success);
+            background: #1e3a1e;
+        }
+        
+        .notification--error {
+            border-color: var(--color-error);
+            background: #3a1e1e;
+        }
+        
+        .notification--warning {
+            border-color: var(--color-warning);
+            background: #3a3a1e;
+        }
+        
+        @keyframes slideInRight {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header Component Container -->
+        <div class="header-container"></div>
+        
+        <!-- Debug Panel (hidden by default) -->
+        <div class="debug-panel" id="debug-panel" style="display: none;">
+            <h4>🔧 DEBUG INFO</h4>
+            <div class="debug-info" id="debug-info">Loading debug information...</div>
+        </div>
+        
+        <!-- Main Content Grid -->
+        <div class="main-grid">
+            <!-- Overview Panel -->
+            <div id="overview" class="component-loading">Loading overview component...</div>
+            
+            <!-- Priority Breakdown -->
+            <div id="priority-breakdown" class="component-loading">Loading priority component...</div>
+            
+            <!-- Jobs List -->
+            <div class="full-width">
+                <div id="jobs-list-container" class="component-loading">Loading jobs component...</div>
+            </div>
+            
+            <!-- Agent Status -->
+            <div class="full-width">
+                <div id="agent-status-container" class="component-loading">Loading agent component...</div>
+            </div>
+        </div>
+        
+        <!-- Activity Log -->
+        <div id="activity-log-container" class="component-loading">Loading activity log component...</div>
+        
+        <!-- Time Tracking -->
+        <div id="time-tracking-container" class="component-loading">Loading time tracking component...</div>
+        
+        <!-- Last Updated -->
+        <div class="last-updated" id="last-updated">Last updated: Loading...</div>
+    </div>
+    
+    <!-- Notification Container -->
+    <div class="notification-container" id="notification-container"></div>
+    
+    <!-- Component Loading Script -->
+    <script type="module">
+        // Import and initialize core infrastructure
+        import './components/core/event-bus.js';
+        import './components/core/data-store.js';
+        import './components/core/api-client.js';
+        
+        // Import UI components
+        import Header from './components/ui/header.js';
+        import OverviewPanel from './components/ui/overview-panel.js';
+        import PriorityBreakdown from './components/ui/priority-breakdown.js';
+        import JobsList from './components/ui/jobs-list.js';
+        import AgentStatus from './components/ui/agent-status.js';
+        
+        // Initialize components when DOM is ready
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('🚀 Initializing Stratavore WebUI v4 - Modular Architecture');
+            
+            // Initialize core systems first
+            initializeCoreSystems();
+            
+            // Initialize UI components
+            initializeComponents();
+            
+            // Set up global event handlers
+            setupGlobalHandlers();
+            
+            // Start data refresh cycle
+            startDataRefresh();
+            
+            console.log('✅ All components initialized successfully');
+        });
+        
+        function initializeCoreSystems() {
+            // Verify core systems are available
+            if (!window.eventBus) {
+                throw new Error('EventBus not loaded');
+            }
+            if (!window.dataStore) {
+                throw new Error('DataStore not loaded');
+            }
+            if (!window.apiClient) {
+                throw new Error('APIClient not loaded');
+            }
+            
+            console.log('📡 Core systems verified');
+        }
+        
+        function initializeComponents() {
+            try {
+                // Initialize Header
+                const headerContainer = document.querySelector('.header-container');
+                if (headerContainer) {
+                    window.headerComponent = new Header(headerContainer);
+                    console.log('📋 Header component initialized');
+                }
+                
+                // Initialize Overview Panel
+                const overviewContainer = document.querySelector('#overview');
+                if (overviewContainer) {
+                    window.overviewPanel = new OverviewPanel(overviewContainer);
+                    console.log('📊 Overview panel initialized');
+                }
+                
+                // Initialize Priority Breakdown
+                const priorityContainer = document.querySelector('#priority-breakdown');
+                if (priorityContainer) {
+                    window.priorityBreakdown = new PriorityBreakdown(priorityContainer);
+                    console.log('🎯 Priority breakdown initialized');
+                }
+                
+                // Initialize Jobs List
+                const jobsContainer = document.querySelector('#jobs-list-container');
+                if (jobsContainer) {
+                    window.jobsList = new JobsList(jobsContainer);
+                    console.log('📋 Jobs list initialized');
+                }
+                
+                // Initialize Agent Status
+                const agentContainer = document.querySelector('#agent-status-container');
+                if (agentContainer) {
+                    window.agentStatus = new AgentStatus(agentContainer);
+                    console.log('🤖 Agent status initialized');
+                }
+                
+                // Hide loading indicators
+                document.querySelectorAll('.component-loading').forEach(el => {
+                    el.classList.remove('component-loading');
+                });
+                
+            } catch (error) {
+                console.error('❌ Component initialization failed:', error);
+                showGlobalError('Failed to initialize some components. Please refresh the page.');
+            }
+        }
+        
+        function setupGlobalHandlers() {
+            // Debug panel toggle
+            const debugPanel = document.getElementById('debug-panel');
+            const debugInfo = document.getElementById('debug-info');
+            
+            window.eventBus.on('header:debug-toggled', (event) => {
+                debugPanel.style.display = event.data.debugMode ? 'block' : 'none';
+                if (event.data.debugMode) {
+                    updateDebugInfo();
+                }
+            });
+            
+            // Notification system
+            window.eventBus.on('notification', (event) => {
+                showNotification(event.data.message, event.data.type);
+            });
+            
+            // Data refresh handling
+            window.eventBus.on('header:refresh-requested', async () => {
+                try {
+                    const response = await window.apiClient.getStatus();
+                    if (response.ok) {
+                        window.dataStore.updateFromAPI(response.data);
+                        updateLastUpdated();
+                    }
+                } catch (error) {
+                    console.error('Data refresh failed:', error);
+                    showNotification('Failed to refresh data', 'error');
+                }
+            });
+            
+            // Error handling
+            window.eventBus.onError((errorInfo) => {
+                console.error('Global error:', errorInfo);
+                if (errorInfo.error.name === 'CriticalError') {
+                    showGlobalError(errorInfo.error.message);
+                }
+            });
+            
+            // Performance monitoring
+            setInterval(() => {
+                const metrics = {
+                    eventBus: window.eventBus?.getMetrics(),
+                    apiClient: window.apiClient?.getMetrics(),
+                    dataStore: window.dataStore?.getStats()
+                };
+                
+                if (window.dataStore.get('debugMode')) {
+                    updateDebugInfo(metrics);
+                }
+            }, 30000);
+        }
+        
+        function startDataRefresh() {
+            // Initial data load
+            window.eventBus.emit('header:refresh-requested');
+            
+            // Auto-refresh every 30 seconds
+            setInterval(() => {
+                window.eventBus.emit('header:refresh-requested');
+            }, 30000);
+        }
+        
+        function updateDebugInfo(metrics = null) {
+            const debugInfo = document.getElementById('debug-info');
+            if (!debugInfo) return;
+            
+            const data = window.dataStore?.getState() || {};
+            const agentMetrics = metrics?.dataStore || {};
+            
+            debugInfo.textContent = `
+=== SYSTEM STATUS ===
+Timestamp: ${new Date().toLocaleString()}
+Connection: ${data.connectionStatus || 'unknown'}
+Last Update: ${data.lastUpdate ? new Date(data.lastUpdate * 1000).toLocaleString() : 'Never'}
+
+=== DATA METRICS ===
+Jobs: ${data.jobs?.length || 0} total, ${data.activeJobs?.length || 0} active
+Agents: ${Object.keys(data.agents || {}).length} total
+Time Sessions: ${data.timeSessions?.length || 0} total
+Agent Todos: ${data.agentTodos?.length || 0} total
+
+=== PERFORMANCE METRICS ===
+${metrics ? `
+EventBus Events: ${metrics.eventBus?.eventsEmitted || 0}
+API Success Rate: ${metrics.apiClient?.successRate || 'N/A'}
+Data Store Size: ${(agentMetrics.stateSize / 1024).toFixed(2)} KB
+Subscribers: ${agentMetrics.subscriberCount || 0}
+` : 'Performance data loading...'}
+
+=== COMPONENT STATUS ===
+Header: ${window.headerComponent ? '✅ Loaded' : '❌ Missing'}
+Overview Panel: ${window.overviewPanel ? '✅ Loaded' : '❌ Missing'}
+Priority Breakdown: ${window.priorityBreakdown ? '✅ Loaded' : '❌ Missing'}
+Jobs List: ${window.jobsList ? '✅ Loaded' : '❌ Missing'}
+Agent Status: ${window.agentStatus ? '✅ Loaded' : '❌ Missing'}
+            `.trim();
+        }
+        
+        function showNotification(message, type = 'info') {
+            const container = document.getElementById('notification-container');
+            if (!container) return;
+            
+            const notification = document.createElement('div');
+            notification.className = `notification notification--${type}`;
+            notification.innerHTML = `
+                <div style="font-weight: bold; margin-bottom: 4px;">
+                    ${type === 'success' ? '✅' : type === 'error' ? '❌' : type === 'warning' ? '⚠️' : 'ℹ️'} ${type.toUpperCase()}
+                </div>
+                <div>${message}</div>
+            `;
+            
+            container.appendChild(notification);
+            
+            // Auto-remove after 5 seconds
+            setTimeout(() => {
+                notification.style.animation = 'fadeOut 0.3s ease';
+                setTimeout(() => {
+                    container.removeChild(notification);
+                }, 300);
+            }, 5000);
+        }
+        
+        function showGlobalError(message) {
+            showNotification(`System Error: ${message}`, 'error');
+            console.error('Global error:', message);
+        }
+        
+        function updateLastUpdated() {
+            const lastUpdated = document.getElementById('last-updated');
+            if (lastUpdated) {
+                lastUpdated.textContent = `Last updated: ${new Date().toLocaleString()}`;
+            }
+        }
+        
+        // Global error handling
+        window.addEventListener('error', (event) => {
+            console.error('Unhandled error:', event.error);
+            showGlobalError('An unexpected error occurred. Please refresh the page.');
+        });
+        
+        window.addEventListener('unhandledrejection', (event) => {
+            console.error('Unhandled promise rejection:', event.reason);
+            showGlobalError('A network error occurred. Please check your connection.');
+        });
+        
+        // Export for debugging
+        window.StratavoreUI = {
+            version: '4.0.0',
+            architecture: 'modular',
+            components: {
+                header: () => window.headerComponent,
+                overview: () => window.overviewPanel,
+                priority: () => window.priorityBreakdown,
+                jobs: () => window.jobsList,
+                agents: () => window.agentStatus
+            },
+            core: {
+                eventBus: () => window.eventBus,
+                dataStore: () => window.dataStore,
+                apiClient: () => window.apiClient
+            },
+            refresh: () => window.eventBus.emit('header:refresh-requested'),
+            debug: () => window.dataStore.updateState('debugMode', !window.dataStore.get('debugMode'))
+        };
+    </script>
+</body>
+</html>

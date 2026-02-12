@@ -1,15 +1,64 @@
 /**
- * CSS Components - Modular styling for Stratavore Web UI v4
+ * Component-Specific Styles - Modular CSS for UI components
+ * Enhanced with CSS custom properties for better theming and maintainability
  */
 
-/* Base component styles */
+/* ========== CARD COMPONENTS ========== */
+
 .card {
-    background: #2a2a2a;
-    border: 1px solid #00ff00;
-    padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 2px 10px rgba(0, 255, 0, 0.1);
-    margin-bottom: 20px;
+  background: var(--color-surface);
+  border: var(--border-width-thin) solid var(--color-primary);
+  border-radius: var(--border-radius-md);
+  padding: var(--spacing-lg);
+  box-shadow: var(--shadow-md);
+  transition: all var(--transition-normal);
+  margin-bottom: var(--spacing-md);
+}
+
+.card:hover {
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-1px);
+  border-color: var(--color-secondary);
+}
+
+.card--error {
+  background: #3a2a2a;
+  border-color: var(--color-error);
+}
+
+.card--error h3 {
+  color: var(--color-error);
+}
+
+.card--warning {
+  background: #3a3a1e;
+  border-color: var(--color-warning);
+}
+
+.card--success {
+  background: #1e3a1e;
+  border-color: var(--color-success);
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-md);
+  padding-bottom: var(--spacing-sm);
+  border-bottom: var(--border-width-thin) solid rgba(0, 255, 0, 0.2);
+}
+
+.card-title {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-primary);
+  margin: 0;
+}
+
+.card-actions {
+  display: flex;
+  gap: var(--spacing-sm);
 }
 
 .card-header {
