@@ -1,85 +1,46 @@
 #!/usr/bin/env python3
 """
-Granular Time Tracking System
-Track job work sessions with second precision
+Meridian Lex — Granular Time Tracking System
+Track work sessions with second precision.
+
+Sessions file location (in priority order):
+  1. LEX_TIME_SESSIONS environment variable
+  2. ~/meridian-home/lex-internal/state/time_sessions.jsonl (default)
 """
 
 import json
-import time
+import os
 import sys
+import time
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional
 
+DEFAULT_SESSIONS_FILE = os.path.expanduser(
+    "~/meridian-home/lex-internal/state/time_sessions.jsonl"
+)
+
+
 class TimeTracker:
     def __init__(self):
-        self.sessions_file = "jobs/time_sessions.jsonl"
-        self.ensure_file_exists()
-    
-    def ensure_file_exists(self):
-        """Create sessions file if it doesn't exist"""
-        try:
-            with open(self.sessions_file, 'r') as f:
+        self.sessions_file = os.environ.get("LEX_TIME_SESSIONS", DEFAULT_SESSIONS_FILE)
+        os.makedirs(os.path.dirname(self.sessions_file), exist_ok=True)
+        self._ensure_file_exists()
+
+    def _ensure_file_exists(self):
+        if not os.path.exists(self.sessions_file):
+            with open(self.sessions_file, "w") as f:
                 pass
-        except FileNotFoundError:
-            with open(self.sessions_file, 'w') as f:
-                f.write("")
-    
-    def start_session(self, job_id: str, agent: str, description: str = "") -> str:
-        """Start a new work session"""
-        session_id = f"{job_id}_{int(time.time())}"
-        session = {
-            "session_id": session_id,
-            "job_id": job_id,
-            "agent": agent,
-            "description": description,
-            "status": "active",
-            "start_time": datetime.now().isoformat(),
-            "start_timestamp": time.time(),
-            "end_time": None,
-            "end_timestamp": None,
-            "duration_seconds": None,
-            "paused_time": 0,
-            "pauses": [],
-            "created_at": datetime.now().isoformat()
-        }
-        
-        self.append_session(session)
-        print(f"⏱️  Started session {session_id} for job {job_id}")
-        return session_id
-    
-    def end_session(self, session_id: str, notes: str = "") -> bool:
-        """End an active work session"""
-        sessions = self.load_sessions()
-        
-        for i, session in enumerate(sessions):
-            if session["session_id"] == session_id and session["status"] == "active":
-                session["status"] = "completed"
-                session["end_time"] = datetime.now().isoformat()
-                session["end_timestamp"] = time.time()
-                session["duration_seconds"] = session["end_timestamp"] - session["start_timestamp"] - session["paused_time"]
-                session["notes"] = notes
-                
-                sessions[i] = session
-                self.save_sessions(sessions)
-                
-                duration = timedelta(seconds=int(session["duration_seconds"]))
-                print(f"⏹️  Ended session {session_id}")
-                print(f"   Duration: {duration}")
-                return True
-        
-        print(f"❌ Active session {session_id} not found")
-        return False
-    
-    def append_session(self, session: Dict):
-        """Append a new session to the file"""
-        with open(self.sessions_file, 'a') as f:
-            f.write(json.dumps(session) + '\n')
-    
-    def load_sessions(self) -> List[Dict]:
-        """Load all sessions from file"""
+
+    # ── Session I/O ──────────────────────────────────────────────────────────
+
+    def _append_session(self, session: Dict):
+        with open(self.sessions_file, "a") as f:
+            f.write(json.dumps(session) + "\n")
+
+    def _load_sessions(self) -> List[Dict]:
         sessions = []
         try:
-            with open(self.sessions_file, 'r') as f:
+            with open(self.sessions_file, "r") as f:
                 for line in f:
                     line = line.strip()
                     if not line:
@@ -91,126 +52,357 @@ class TimeTracker:
         except FileNotFoundError:
             pass
         return sessions
-    
-    def save_sessions(self, sessions: List[Dict]):
-        """Save all sessions back to file"""
-        with open(self.sessions_file, 'w') as f:
+
+    def _save_sessions(self, sessions: List[Dict]):
+        with open(self.sessions_file, "w") as f:
             for session in sessions:
-                f.write(json.dumps(session) + '\n')
-    
-    def get_active_sessions(self) -> List[Dict]:
-        """Get all currently active sessions"""
-        sessions = self.load_sessions()
-        return [s for s in sessions if s["status"] == "active"]
-    
-    def calculate_job_time(self, job_id: str) -> Dict:
-        """Calculate total time spent on a job"""
-        sessions = self.get_job_sessions(job_id)
-        
+                f.write(json.dumps(session) + "\n")
+
+    def _get_session(self, session_id: str) -> Optional[Dict]:
+        for s in self._load_sessions():
+            if s["session_id"] == session_id:
+                return s
+        return None
+
+    # ── Core Commands ─────────────────────────────────────────────────────────
+
+    def start_session(self, job_id: str, agent: str, description: str = "") -> str:
+        """Start a new work session."""
+        # Warn if this job already has an active session
+        active = [s for s in self._load_sessions()
+                  if s["job_id"] == job_id and s["status"] == "active"]
+        if active:
+            print(f"[WARN] Job '{job_id}' already has {len(active)} active session(s):")
+            for s in active:
+                print(f"       {s['session_id']}")
+            print("       Use 'end' or 'cancel' before starting a new session for the same job.")
+
+        session_id = f"{job_id}_{int(time.time())}"
+        now = time.time()
+        session = {
+            "session_id": session_id,
+            "job_id": job_id,
+            "agent": agent,
+            "description": description,
+            "status": "active",
+            "start_time": datetime.utcnow().isoformat() + "Z",
+            "start_timestamp": now,
+            "end_time": None,
+            "end_timestamp": None,
+            "duration_seconds": None,
+            "paused_time": 0,
+            "pauses": [],
+            "notes": "",
+            "created_at": datetime.utcnow().isoformat() + "Z",
+        }
+        self._append_session(session)
+        print(f"Started  {session_id}")
+        print(f"  Job:    {job_id}")
+        if description:
+            print(f"  Desc:   {description}")
+        print(f"  Time:   {session['start_time']}")
+        return session_id
+
+    def end_session(self, session_id: str, notes: str = "") -> bool:
+        """End an active work session."""
+        sessions = self._load_sessions()
+        for i, s in enumerate(sessions):
+            if s["session_id"] == session_id:
+                if s["status"] == "paused":
+                    # Auto-resume before ending
+                    s = self._apply_resume(s)
+                if s["status"] != "active":
+                    print(f"[ERR] Session {session_id} is '{s['status']}', not active.")
+                    return False
+                now = time.time()
+                s["status"] = "completed"
+                s["end_time"] = datetime.utcnow().isoformat() + "Z"
+                s["end_timestamp"] = now
+                s["duration_seconds"] = now - s["start_timestamp"] - s["paused_time"]
+                s["notes"] = notes
+                sessions[i] = s
+                self._save_sessions(sessions)
+                duration = timedelta(seconds=int(s["duration_seconds"]))
+                print(f"Ended    {session_id}")
+                print(f"  Duration: {duration}")
+                if notes:
+                    print(f"  Notes:    {notes}")
+                return True
+        print(f"[ERR] Session '{session_id}' not found.")
+        return False
+
+    def pause_session(self, session_id: str) -> bool:
+        """Pause an active session."""
+        sessions = self._load_sessions()
+        for i, s in enumerate(sessions):
+            if s["session_id"] == session_id:
+                if s["status"] != "active":
+                    print(f"[ERR] Session {session_id} is '{s['status']}', not active.")
+                    return False
+                now = time.time()
+                s["status"] = "paused"
+                s["pauses"].append({"pause_start": now})
+                sessions[i] = s
+                self._save_sessions(sessions)
+                elapsed = timedelta(seconds=int(now - s["start_timestamp"] - s["paused_time"]))
+                print(f"Paused   {session_id}  (elapsed so far: {elapsed})")
+                return True
+        print(f"[ERR] Session '{session_id}' not found.")
+        return False
+
+    def resume_session(self, session_id: str) -> bool:
+        """Resume a paused session."""
+        sessions = self._load_sessions()
+        for i, s in enumerate(sessions):
+            if s["session_id"] == session_id:
+                if s["status"] != "paused":
+                    print(f"[ERR] Session {session_id} is '{s['status']}', not paused.")
+                    return False
+                s = self._apply_resume(s)
+                sessions[i] = s
+                self._save_sessions(sessions)
+                print(f"Resumed  {session_id}")
+                return True
+        print(f"[ERR] Session '{session_id}' not found.")
+        return False
+
+    def cancel_session(self, session_id: str) -> bool:
+        """Cancel (abandon) a session without recording it as completed."""
+        sessions = self._load_sessions()
+        for i, s in enumerate(sessions):
+            if s["session_id"] == session_id:
+                if s["status"] == "completed":
+                    print(f"[ERR] Session {session_id} is already completed. Cannot cancel.")
+                    return False
+                s["status"] = "cancelled"
+                s["end_time"] = datetime.utcnow().isoformat() + "Z"
+                sessions[i] = s
+                self._save_sessions(sessions)
+                print(f"Cancelled {session_id}")
+                return True
+        print(f"[ERR] Session '{session_id}' not found.")
+        return False
+
+    # ── Query Commands ────────────────────────────────────────────────────────
+
+    def show_status(self):
+        """Quick health check — active and paused sessions."""
+        sessions = self._load_sessions()
+        active = [s for s in sessions if s["status"] == "active"]
+        paused = [s for s in sessions if s["status"] == "paused"]
+
+        if not active and not paused:
+            print("No active or paused sessions.")
+            return
+
+        now = time.time()
+        if active:
+            print(f"Active ({len(active)}):")
+            for s in active:
+                elapsed = timedelta(seconds=int(now - s["start_timestamp"] - s["paused_time"]))
+                print(f"  {s['session_id']}")
+                print(f"    Job:     {s['job_id']}")
+                print(f"    Elapsed: {elapsed}")
+                if s.get("description"):
+                    print(f"    Desc:    {s['description']}")
+
+        if paused:
+            print(f"Paused ({len(paused)}):")
+            for s in paused:
+                paused_so_far = s["paused_time"] + (now - s["pauses"][-1]["pause_start"])
+                elapsed = timedelta(seconds=int(now - s["start_timestamp"] - paused_so_far))
+                print(f"  {s['session_id']}  (active time: {elapsed})")
+
+    def show_active(self):
+        """Show all currently active sessions (legacy command)."""
+        self.show_status()
+
+    def show_job(self, job_id: str):
+        """Show cumulative time for a job."""
+        info = self._calculate_job_time(job_id)
+        if info["completed_sessions"] == 0 and info["active_sessions"] == 0:
+            print(f"No sessions found for job '{job_id}'.")
+            return
+        print(f"Job: {job_id}")
+        print(f"  Total time:          {info['formatted_time']}  ({info['total_hours']:.2f}h)")
+        print(f"  Completed sessions:  {info['completed_sessions']}")
+        if info["active_sessions"]:
+            print(f"  Active sessions:     {info['active_sessions']}  (time included above)")
+
+    def show_all(self):
+        """Aggregated stats across all jobs."""
+        sessions = self._load_sessions()
+        if not sessions:
+            print("No sessions recorded.")
+            return
+
+        job_ids = sorted({s["job_id"] for s in sessions})
+        print(f"All sessions ({len(sessions)} total across {len(job_ids)} jobs):")
+        grand_total = 0
+        for job_id in job_ids:
+            info = self._calculate_job_time(job_id)
+            grand_total += info["total_seconds"]
+            active_note = f"  [{info['active_sessions']} active]" if info["active_sessions"] else ""
+            print(f"  {job_id:<30} {info['formatted_time']:>12}  "
+                  f"({info['completed_sessions']} sessions){active_note}")
+        print(f"  {'TOTAL':<30} {str(timedelta(seconds=int(grand_total))):>12}")
+
+    def generate_report(self, job_id: str):
+        """Generate a TIME-TRACKING.md-compatible markdown entry for a job."""
+        sessions = [s for s in self._load_sessions()
+                    if s["job_id"] == job_id and s["status"] == "completed"]
+        if not sessions:
+            print(f"No completed sessions for job '{job_id}'.")
+            return
+
+        sessions.sort(key=lambda s: s["start_timestamp"])
+        first = sessions[0]
+        last = sessions[-1]
+        total_seconds = sum(s["duration_seconds"] for s in sessions if s["duration_seconds"])
+        total_duration = timedelta(seconds=int(total_seconds))
+        total_minutes = int(total_seconds / 60)
+
+        start_dt = datetime.fromisoformat(first["start_time"].rstrip("Z"))
+        end_dt = datetime.fromisoformat(last["end_time"].rstrip("Z"))
+
+        notes_lines = [s["notes"] for s in sessions if s.get("notes")]
+        descriptions = list({s["description"] for s in sessions if s.get("description")})
+
+        print(f"### Task {job_id}: {descriptions[0] if descriptions else job_id}")
+        print(f"- **Estimate**: N/A")
+        print(f"- **Actual**: {total_minutes} minutes ({total_duration})")
+        print(f"- **Variance**: N/A")
+        print(f"- **Started**: {start_dt.strftime('%Y-%m-%d %H:%M')} UTC")
+        print(f"- **Completed**: {end_dt.strftime('%Y-%m-%d %H:%M')} UTC")
+        print(f"- **Sessions**: {len(sessions)}")
+        if notes_lines:
+            print(f"- **Notes**:")
+            for note in notes_lines:
+                print(f"  - {note}")
+
+    # ── Internal Helpers ──────────────────────────────────────────────────────
+
+    def _apply_resume(self, session: Dict) -> Dict:
+        """Record pause end and update paused_time."""
+        now = time.time()
+        if session["pauses"]:
+            last_pause = session["pauses"][-1]
+            if "pause_end" not in last_pause:
+                pause_duration = now - last_pause["pause_start"]
+                last_pause["pause_end"] = now
+                session["paused_time"] = session.get("paused_time", 0) + pause_duration
+        session["status"] = "active"
+        return session
+
+    def _calculate_job_time(self, job_id: str) -> Dict:
+        sessions = [s for s in self._load_sessions() if s["job_id"] == job_id]
+        now = time.time()
         total_seconds = 0
-        completed_sessions = 0
-        
-        for session in sessions:
-            if session["status"] == "completed" and session["duration_seconds"]:
-                total_seconds += session["duration_seconds"]
-                completed_sessions += 1
-            elif session["status"] == "active":
-                # Calculate current session time
-                current_time = time.time() - session["start_timestamp"] - session["paused_time"]
-                total_seconds += current_time
-        
+        completed = 0
+        active = 0
+        for s in sessions:
+            if s["status"] == "completed" and s.get("duration_seconds"):
+                total_seconds += s["duration_seconds"]
+                completed += 1
+            elif s["status"] == "active":
+                total_seconds += now - s["start_timestamp"] - s.get("paused_time", 0)
+                active += 1
         return {
             "job_id": job_id,
             "total_seconds": total_seconds,
             "total_hours": total_seconds / 3600,
-            "completed_sessions": completed_sessions,
-            "active_sessions": len([s for s in sessions if s["status"] == "active"]),
-            "formatted_time": str(timedelta(seconds=int(total_seconds)))
+            "completed_sessions": completed,
+            "active_sessions": active,
+            "formatted_time": str(timedelta(seconds=int(total_seconds))),
         }
-    
-    def get_job_sessions(self, job_id: str) -> List[Dict]:
-        """Get all sessions for a specific job"""
-        sessions = self.load_sessions()
-        return [s for s in sessions if s["job_id"] == job_id]
+
+
+# ── CLI ───────────────────────────────────────────────────────────────────────
+
+USAGE = """\
+Meridian Lex Time Tracker
+
+Usage: time_tracker.py <command> [args]
+
+Commands:
+  start <job_id> <agent> [description]  Start a new work session
+  end   <session_id> [notes]            End an active session
+  pause <session_id>                    Pause an active session
+  resume <session_id>                   Resume a paused session
+  cancel <session_id>                   Abandon a session (not recorded as complete)
+  status                                Show active and paused sessions
+  active                                Alias for status
+  job   <job_id>                        Show cumulative time for a job
+  all                                   Show stats for all jobs
+  report <job_id>                       Generate TIME-TRACKING.md entry for a job
+
+Sessions file: {sessions_file}
+Override:      export LEX_TIME_SESSIONS=/path/to/file
+"""
+
 
 def main():
-    """CLI interface for time tracking"""
     tracker = TimeTracker()
-    
+
     if len(sys.argv) < 2:
-        print("Usage: python3 time_tracker.py [command]")
-        print("Commands:")
-        print("  start <job_id> <agent> [description]  - Start work session")
-        print("  end <session_id> [notes]            - End work session")
-        print("  active                               - Show active sessions")
-        print("  job <job_id>                        - Show job time summary")
-        print("  all                                  - Show all session stats")
+        print(USAGE.format(sessions_file=tracker.sessions_file))
         return
-    
-    command = sys.argv[1]
-    
-    if command == "start":
+
+    cmd = sys.argv[1]
+
+    if cmd == "start":
         if len(sys.argv) < 4:
-            print("Usage: python3 time_tracker.py start <job_id> <agent> [description]")
+            print("Usage: time_tracker.py start <job_id> <agent> [description]")
             return
-        job_id = sys.argv[2]
-        agent = sys.argv[3]
-        description = sys.argv[4] if len(sys.argv) > 4 else ""
-        tracker.start_session(job_id, agent, description)
-    
-    elif command == "end":
+        tracker.start_session(sys.argv[2], sys.argv[3],
+                               sys.argv[4] if len(sys.argv) > 4 else "")
+
+    elif cmd == "end":
         if len(sys.argv) < 3:
-            print("Usage: python3 time_tracker.py end <session_id> [notes]")
+            print("Usage: time_tracker.py end <session_id> [notes]")
             return
-        session_id = sys.argv[2]
-        notes = sys.argv[3] if len(sys.argv) > 3 else ""
-        tracker.end_session(session_id, notes)
-    
-    elif command == "active":
-        active = tracker.get_active_sessions()
-        if not active:
-            print("📭 No active sessions")
-        else:
-            print(f"🔄 {len(active)} active sessions:")
-            for session in active:
-                start_time = datetime.fromisoformat(session["start_time"])
-                duration = time.time() - session["start_timestamp"]
-                print(f"  {session['session_id']}")
-                print(f"    Job: {session['job_id']}")
-                print(f"    Agent: {session['agent']}")
-                print(f"    Started: {start_time.strftime('%H:%M:%S')}")
-                print(f"    Duration: {str(timedelta(seconds=int(duration)))}")
-                if session.get("description"):
-                    print(f"    Note: {session['description']}")
-                print()
-    
-    elif command == "job":
+        tracker.end_session(sys.argv[2], sys.argv[3] if len(sys.argv) > 3 else "")
+
+    elif cmd == "pause":
         if len(sys.argv) < 3:
-            print("Usage: python3 time_tracker.py job <job_id>")
+            print("Usage: time_tracker.py pause <session_id>")
             return
-        job_id = sys.argv[2]
-        time_info = tracker.calculate_job_time(job_id)
-        print(f"📊 Time Summary for {job_id}")
-        print(f"  Total Time: {time_info['formatted_time']}")
-        print(f"  Hours: {time_info['total_hours']:.2f}")
-        print(f"  Completed Sessions: {time_info['completed_sessions']}")
-        print(f"  Active Sessions: {time_info['active_sessions']}")
-    
-    elif command == "all":
-        sessions = tracker.load_sessions()
-        print(f"📈 ALL SESSIONS ({len(sessions)} total)")
-        
-        # Group by job
-        job_times = {}
-        for session in sessions:
-            job_id = session["job_id"]
-            if job_id not in job_times:
-                job_times[job_id] = tracker.calculate_job_time(job_id)
-        
-        for job_id, time_info in job_times.items():
-            print(f"\n🏷️  {job_id}")
-            print(f"   ⏱️  {time_info['formatted_time']} ({time_info['total_hours']:.2f}h)")
-            print(f"   📋 {time_info['completed_sessions']} completed, {time_info['active_sessions']} active")
+        tracker.pause_session(sys.argv[2])
+
+    elif cmd == "resume":
+        if len(sys.argv) < 3:
+            print("Usage: time_tracker.py resume <session_id>")
+            return
+        tracker.resume_session(sys.argv[2])
+
+    elif cmd == "cancel":
+        if len(sys.argv) < 3:
+            print("Usage: time_tracker.py cancel <session_id>")
+            return
+        tracker.cancel_session(sys.argv[2])
+
+    elif cmd in ("status", "active"):
+        tracker.show_status()
+
+    elif cmd == "job":
+        if len(sys.argv) < 3:
+            print("Usage: time_tracker.py job <job_id>")
+            return
+        tracker.show_job(sys.argv[2])
+
+    elif cmd == "all":
+        tracker.show_all()
+
+    elif cmd == "report":
+        if len(sys.argv) < 3:
+            print("Usage: time_tracker.py report <job_id>")
+            return
+        tracker.generate_report(sys.argv[2])
+
+    else:
+        print(f"[ERR] Unknown command: '{cmd}'")
+        print(USAGE.format(sessions_file=tracker.sessions_file))
+
 
 if __name__ == "__main__":
     main()
