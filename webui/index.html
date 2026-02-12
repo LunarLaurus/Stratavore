@@ -246,24 +246,17 @@
 
         <div class="debug-panel" id="debug-panel" style="display: none;">
             <h4>🔧 DEBUG INFO</h4>
-            <div class="debug-info" id="debug-info">
-                Loading debug information...
-            </div>
+            <div class="debug-info" id="debug-info">Loading debug information...</div>
         </div>
 
         <div class="status-grid">
             <div class="card">
                 <h3>📊 OVERVIEW</h3>
-                <div id="overview">
-                    <div class="loading">🔄 Loading overview...</div>
-                </div>
+                <div id="overview"><div class="loading">🔄 Loading overview...</div></div>
             </div>
-            
             <div class="card">
                 <h3>🎯 PRIORITY BREAKDOWN</h3>
-                <div id="priority-breakdown">
-                    <div class="loading">🔄 Loading priorities...</div>
-                </div>
+                <div id="priority-breakdown"><div class="loading">🔄 Loading priorities...</div></div>
             </div>
         </div>
 
@@ -275,11 +268,58 @@
         </div>
 
         <div class="card">
-            <h3>🤖 AGENT STATUS & WORKFLOW</h3>
-            <div style="margin-bottom: 20px;">
+            <h3>🤖 AGENT STATUS &amp; WORKFLOW</h3>
+            <div style="margin-bottom: 15px; display: flex; flex-wrap: wrap; gap: 8px;">
                 <button class="refresh-btn" onclick="spawnAgent()">🚀 SPAWN AGENT</button>
-                <button class="refresh-btn" onclick="showAgentControls()">🎛 AGENT CONTROLS</button>
+                <button class="refresh-btn" onclick="toggleAgentControls()">🎛 AGENT CONTROLS</button>
             </div>
+
+            <!-- Agent controls panel (hidden by default) -->
+            <div id="agent-controls" style="display:none; background:#1e1e1e; border:1px solid #444; border-radius:6px; padding:15px; margin-bottom:15px;">
+                <h4 style="color:#00ffff; margin-bottom:12px;">🎛 Agent Control Panel</h4>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+                    <!-- Assign task -->
+                    <div style="background:#2a2a2a; padding:12px; border-radius:5px; border:1px solid #333;">
+                        <p style="color:#fff; font-weight:bold; margin-bottom:8px;">📋 Assign Task</p>
+                        <input id="ctrl-assign-agent" type="text" placeholder="Agent ID" style="width:100%; margin-bottom:6px; padding:6px; background:#1a1a1a; color:#0f0; border:1px solid #444; border-radius:3px; font-family:monospace;">
+                        <input id="ctrl-assign-task" type="text" placeholder="Task ID (e.g. JOB-001)" style="width:100%; margin-bottom:6px; padding:6px; background:#1a1a1a; color:#0f0; border:1px solid #444; border-radius:3px; font-family:monospace;">
+                        <button class="refresh-btn" style="padding:8px 14px; margin:0;" onclick="ctrlAssignTask()">Assign</button>
+                    </div>
+                    <!-- Complete task -->
+                    <div style="background:#2a2a2a; padding:12px; border-radius:5px; border:1px solid #333;">
+                        <p style="color:#fff; font-weight:bold; margin-bottom:8px;">✅ Complete Task</p>
+                        <input id="ctrl-complete-agent" type="text" placeholder="Agent ID" style="width:100%; margin-bottom:6px; padding:6px; background:#1a1a1a; color:#0f0; border:1px solid #444; border-radius:3px; font-family:monospace;">
+                        <input id="ctrl-complete-notes" type="text" placeholder="Notes (optional)" style="width:100%; margin-bottom:6px; padding:6px; background:#1a1a1a; color:#0f0; border:1px solid #444; border-radius:3px; font-family:monospace;">
+                        <select id="ctrl-complete-success" style="margin-bottom:6px; padding:6px; background:#1a1a1a; color:#0f0; border:1px solid #444; border-radius:3px; font-family:monospace;">
+                            <option value="true">✅ Success</option>
+                            <option value="false">❌ Failed</option>
+                        </select>
+                        <button class="refresh-btn" style="padding:8px 14px; margin:0;" onclick="ctrlCompleteTask()">Complete</button>
+                    </div>
+                    <!-- Update status -->
+                    <div style="background:#2a2a2a; padding:12px; border-radius:5px; border:1px solid #333;">
+                        <p style="color:#fff; font-weight:bold; margin-bottom:8px;">📡 Update Status</p>
+                        <input id="ctrl-status-agent" type="text" placeholder="Agent ID" style="width:100%; margin-bottom:6px; padding:6px; background:#1a1a1a; color:#0f0; border:1px solid #444; border-radius:3px; font-family:monospace;">
+                        <select id="ctrl-status-value" style="width:100%; margin-bottom:6px; padding:6px; background:#1a1a1a; color:#0f0; border:1px solid #444; border-radius:3px; font-family:monospace;">
+                            <option value="idle">😴 Idle</option>
+                            <option value="working">🔨 Working</option>
+                            <option value="paused">⏸️ Paused</option>
+                            <option value="error">❌ Error</option>
+                        </select>
+                        <input id="ctrl-status-thought" type="text" placeholder="Thought (optional)" style="width:100%; margin-bottom:6px; padding:6px; background:#1a1a1a; color:#0f0; border:1px solid #444; border-radius:3px; font-family:monospace;">
+                        <button class="refresh-btn" style="padding:8px 14px; margin:0;" onclick="ctrlUpdateStatus()">Update</button>
+                    </div>
+                    <!-- Kill agent -->
+                    <div style="background:#2a2a2a; padding:12px; border-radius:5px; border:1px solid #333;">
+                        <p style="color:#fff; font-weight:bold; margin-bottom:8px;">🔴 Kill Agent</p>
+                        <input id="ctrl-kill-agent" type="text" placeholder="Agent ID" style="width:100%; margin-bottom:6px; padding:6px; background:#1a1a1a; color:#0f0; border:1px solid #444; border-radius:3px; font-family:monospace;">
+                        <p style="color:#888; font-size:0.8em; margin-bottom:6px;">Marks agent as error state</p>
+                        <button class="refresh-btn" style="padding:8px 14px; margin:0; background:#cc0000;" onclick="ctrlKillAgent()">Kill</button>
+                    </div>
+                </div>
+                <div id="ctrl-result" style="margin-top:10px; padding:8px; border-radius:4px; display:none;"></div>
+            </div>
+
             <div class="agents-status-panel" id="agents-status-panel">
                 <div class="loading">🔄 Loading agents...</div>
             </div>
@@ -293,17 +333,13 @@
         </div>
 
         <div class="card">
-            <div id="time-tracking">
-                <h3>⏱️ TIME TRACKING (<span id="active-session-count">0</span> active)</h3>
-                <div class="time-sessions" id="time-sessions-container">
-                    <div class="loading">🔄 Loading time sessions...</div>
-                </div>
+            <h3>⏱️ TIME TRACKING (<span id="active-session-count">0</span> active)</h3>
+            <div class="time-sessions" id="time-sessions-container">
+                <div class="loading">🔄 Loading time sessions...</div>
             </div>
         </div>
 
-        <div class="last-updated" id="last-updated">
-            Last updated: Loading...
-        </div>
+        <div class="last-updated" id="last-updated">Last updated: Loading...</div>
     </div>
 
     <script>
@@ -316,499 +352,422 @@
         let refreshInterval = null;
         let debugMode = false;
 
-        // Utility functions
+        // ── Utility ──────────────────────────────────────────────────────────
+
         function formatDuration(seconds) {
-            if (!seconds || seconds < 0) { 
-                return "0:00:00"; 
-            }
-            const hours = Math.floor(seconds / 3600);
-            const minutes = Math.floor((seconds % 3600) / 60);
-            const secs = Math.floor(seconds % 60);
-            return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+            if (!seconds || seconds < 0) return '0:00:00';
+            const h = Math.floor(seconds / 3600);
+            const m = Math.floor((seconds % 3600) / 60);
+            const s = Math.floor(seconds % 60);
+            return `${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
         }
 
         function getAgentStatusEmoji(status) {
-            const statusEmojis = {
-                "idle": "😴",
-                "working": "🔨",
-                "spawning": "🚀",
-                "completed": "✅",
-                "error": "❌",
-                "paused": "⏸️"
-            };
-            return statusEmojis[status] || "❓";
+            return { idle:'😴', working:'🔨', spawning:'🚀', completed:'✅', error:'❌', paused:'⏸️' }[status] || '❓';
         }
 
         function getAgentPersonalityEmoji(personality) {
-            const personalityEmojis = {
-                "cadet": "👨‍🚀",
-                "senior": "👴‍💼",
-                "specialist": "🎯",
-                "researcher": "🔬",
-                "debugger": "🐛",
-                "optimizer": "⚡"
-            };
-            return personalityEmojis[personality] || "🤖";
+            return { cadet:'👨‍🚀', senior:'👴', specialist:'🎯', researcher:'🔬', debugger:'🐛', optimizer:'⚡' }[personality] || '🤖';
         }
 
-        function updateConnectionStatus(online, message = '') {
+        function updateConnectionStatus(online, message) {
             const indicator = document.getElementById('connection-status');
             const text = document.getElementById('connection-text');
-            
-            if (online) {
-                indicator.className = 'status-indicator online';
-                text.textContent = message || 'Connected and online';
-            } else {
-                indicator.className = 'status-indicator error';
-                text.textContent = message || 'Connection error';
-            }
+            indicator.className = 'status-indicator ' + (online ? 'online' : 'error');
+            text.textContent = message || (online ? 'Connected' : 'Connection error');
         }
 
         function toggleDebug() {
             debugMode = !debugMode;
-            const panel = document.getElementById('debug-panel');
-            panel.style.display = debugMode ? 'block' : 'none';
+            document.getElementById('debug-panel').style.display = debugMode ? 'block' : 'none';
         }
 
-        function showError(cardId, message) {
-            const card = document.getElementById(cardId);
-            if (card) {
-                card.innerHTML = `<div class="error">❌ ${message}</div>`;
-                card.parentElement.classList.add('error');
-            }
+        function toggleAgentControls() {
+            const ctrl = document.getElementById('agent-controls');
+            ctrl.style.display = ctrl.style.display === 'none' ? 'block' : 'none';
         }
 
-        function updateDebugInfo(data) {
-            const debugInfo = document.getElementById('debug-info');
-            
-            const agentSummary = agents ? Object.keys(agents).length : 0;
-            const activeAgents = agents ? Object.values(agents).filter(a => a.status === 'working').length : 0;
-            const idleAgents = agents ? Object.values(agents).filter(a => a.status === 'idle').length : 0;
-            
-            debugInfo.innerHTML = `
-                <p><strong>Last Update:</strong> ${new Date().toLocaleString()}</p>
-                <p><strong>Data Timestamp:</strong> ${data.timestamp ? new Date(data.timestamp * 1000).toLocaleString() : 'N/A'}</p>
-                <p><strong>Jobs Loaded:</strong> ${data.jobs ? data.jobs.length : 0}</p>
-                <p><strong>Time Sessions:</strong> ${data.time_sessions ? data.time_sessions.length : 0}</p>
-                <p><strong>Active Agents:</strong> ${agentSummary}</p>
-                <p><strong>🔨 Working:</strong> ${activeAgents}</p>
-                <p><strong>😴 Idle:</strong> ${idleAgents}</p>
-                <p><strong>API Response:</strong> ${data.status || 'N/A'}</p>
-                <p><strong>Error:</strong> ${data.error || 'None'}</p>
-                <p><strong>Debug Mode:</strong> ${debugMode ? 'ON' : 'OFF'}</p>
-            `;
-            
-            const debugPanel = document.getElementById('debug-panel');
-            if (debugPanel) {
-                debugPanel.style.display = 'block';
-            }
+        function showCtrlResult(msg, ok) {
+            const el = document.getElementById('ctrl-result');
+            el.style.display = 'block';
+            el.style.background = ok ? '#1e3a1e' : '#3a1e1e';
+            el.style.color = ok ? '#00ff00' : '#ff4444';
+            el.style.border = '1px solid ' + (ok ? '#00ff00' : '#ff4444');
+            el.textContent = msg;
+            setTimeout(() => { el.style.display = 'none'; }, 4000);
         }
 
-        function updateAgentsPanel() {
-            const container = document.getElementById('agents-status-panel');
-            if (!container) {
-                console.log('Agents panel container not found');
-                return;
-            }
-            if (!agents) {
-                console.log('No agents data available');
-                return;
-            }
-            
-            let agentsHTML = '<h4>🤖 ACTIVE AGENTS</h4>';
-            
-            Object.entries(agents).forEach(([agentId, agent]) => {
-                const statusEmoji = getAgentStatusEmoji(agent.status);
-                const personalityEmoji = getAgentPersonalityEmoji(agent.personality);
-                const thoughtText = agent.thoughts && agent.thoughts.length > 0 
-                    ? agent.thoughts[agent.thoughts.length - 1].thought 
-                    : 'No recent thoughts';
-                
-                agentsHTML += `
-                    <div class="agent-status-item ${agent.status}">
-                        <div class="agent-header">
-                            <span class="agent-emoji">${statusEmoji}</span>
-                            <span class="agent-emoji">${personalityEmoji}</span>
-                            <strong>${agentId}</strong> (${agent.personality})
-                        </div>
-                        <div class="agent-details">
-                            <p><strong>Task:</strong> ${agent.current_task || 'No task assigned'}</p>
-                            <p><strong>Thought:</strong> ${thoughtText}</p>
-                            <p><strong>Created:</strong> ${new Date(agent.created_at).toLocaleString()}</p>
-                            <p><strong>Completed:</strong> ${agent.metrics.tasks_completed} tasks</p>
-                        </div>
-                    </div>
-                `;
-            });
-            
-            if (container) {
-                container.innerHTML = agentsHTML;
-            } else {
-                console.log('Agents panel container is null, cannot update');
-            }
-        }
-
-        function updateAgentTodos() {
-            const container = document.getElementById('agent-todos-container');
-            
-            if (!container) {
-                console.log('Agent todos container not found');
-                return;
-            }
-            
-            if (!agentTodos || agentTodos.length === 0) {
-                container.innerHTML = '<div class="no-todos">No agent activities yet</div>';
-                console.log('No agent todos to display');
-                return;
-            }
-
-            console.log(`Updating ${agentTodos.length} agent todos`);
-            let html = '';
-            agentTodos.slice(0, 10).forEach(todo => {
-                const statusClass = todo.status === 'completed' ? 'completed' : 
-                                  todo.status === 'in_progress' ? 'in-progress' : 
-                                  todo.status === 'cancelled' ? 'cancelled' : 'pending';
-                
-                html += `
-                    <div class="todo-item ${statusClass}">
-                        <div class="todo-header">
-                            <span class="todo-title">${todo.title}</span>
-                            <span class="todo-agent">${todo.agent_id} (${todo.metadata?.agent_personality || 'unknown'})</span>
-                        </div>
-                        <div class="todo-description">${todo.description}</div>
-                        <div class="todo-meta">
-                            <span class="todo-time">${new Date(todo.created_at).toLocaleString()}</span>
-                            ${todo.task_id ? `<span class="todo-task">Task: ${todo.task_id}</span>` : ''}
-                        </div>
-                    </div>
-                `;
-            });
-
-            if (container) {
-                container.innerHTML = html;
-            } else {
-                console.log('Agent todos container is null, cannot update');
-            }
-        }
+        // ── Connection / data loading ─────────────────────────────────────────
 
         async function loadData() {
             try {
                 updateConnectionStatus(false, 'Loading data...');
-                
-                const response = await fetch('/api/status');
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                }
-                
-                const data = await response.json();
-                
-                if (data.status === 'error') {
-                    throw new Error(data.error || 'Unknown API error');
-                }
-                
-                // Parse data
-                jobs = data.jobs || [];
-                progress = data.progress || {};
+                const res = await fetch('/api/status');
+                if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+                const data = await res.json();
+                if (data.status === 'error') throw new Error(data.error || 'Unknown API error');
+
+                jobs        = data.jobs         || [];
+                progress    = data.progress      || {};
                 timeSessions = data.time_sessions || [];
-                agents = data.agents || {};
-                agentTodos = data.agent_todos || [];
-                lastUpdate = data.timestamp;
-                
-                console.log('Data loaded:', {
-                    jobs: jobs.length,
-                    agents: Object.keys(agents).length,
-                    todos: agentTodos.length,
-                    sessions: timeSessions.length
-                });
-                
-                // Update UI
+                agents      = data.agents        || {};
+                agentTodos  = data.agent_todos   || [];
+                lastUpdate  = data.timestamp;
+
                 updateUI();
-                updateConnectionStatus(true, `Loaded ${jobs.length} jobs, ${timeSessions.length} sessions, ${Object.keys(agents).length} agents`);
-                updateDebugInfo(data);
-                
-            } catch (error) {
-                console.error('Error loading data:', error);
-                updateConnectionStatus(false, `Error: ${error.message}`);
-                showError('overview', `Failed to load data: ${error.message}`);
-                updateDebugInfo({error: error.message, timestamp: Date.now() / 1000});
+                updateConnectionStatus(true,
+                    `Loaded ${jobs.length} jobs · ${Object.keys(agents).length} agents · ${timeSessions.length} sessions`);
+                if (debugMode) updateDebugInfo(data);
+            } catch (err) {
+                console.error('loadData error:', err);
+                updateConnectionStatus(false, 'Error: ' + err.message);
+                document.getElementById('overview').innerHTML =
+                    `<div class="error">❌ Failed to load: ${err.message}</div>`;
             }
         }
 
         async function loadHealth() {
             try {
-                const response = await fetch('/api/health');
-                const data = await response.json();
-                
-                if (data.status === 'healthy') {
-                    updateConnectionStatus(true, `Server healthy (uptime: ${Math.floor(data.uptime)}s)`);
-                } else {
-                    updateConnectionStatus(false, 'Server health check failed');
-                }
-            } catch (error) {
+                const res = await fetch('/api/health');
+                const data = await res.json();
+                updateConnectionStatus(data.status === 'healthy',
+                    data.status === 'healthy'
+                        ? `Server healthy (uptime: ${Math.floor(data.uptime)}s)`
+                        : 'Health check failed');
+            } catch (err) {
                 updateConnectionStatus(false, 'Health check failed');
             }
         }
 
-        function calculateJobTime(jobId) {
-            const jobSessions = timeSessions.filter(function(s) { return s.job_id === jobId; });
-            let totalSeconds = 0;
-            
-            jobSessions.forEach(function(session) {
-                if (session.status === 'completed' && session.duration_seconds) {
-                    totalSeconds += session.duration_seconds;
-                } else if (session.status === 'active') {
-                    const currentTime = Date.now() / 1000;
-                    totalSeconds += (currentTime - session.start_timestamp - session.paused_time);
-                }
-            });
-            
-            return {
-                totalSeconds: totalSeconds,
-                totalHours: totalSeconds / 3600,
-                formattedTime: formatDuration(totalSeconds)
-            };
+        function updateDebugInfo(data) {
+            const agentCount = Object.keys(agents).length;
+            const working = Object.values(agents).filter(a => a.status === 'working').length;
+            const idle    = Object.values(agents).filter(a => a.status === 'idle').length;
+            document.getElementById('debug-info').innerHTML = `
+                <p><strong>Timestamp:</strong> ${data.timestamp ? new Date(data.timestamp*1000).toLocaleString() : 'N/A'}</p>
+                <p><strong>Jobs:</strong> ${(data.jobs||[]).length} · <strong>Sessions:</strong> ${(data.time_sessions||[]).length}</p>
+                <p><strong>Agents total:</strong> ${agentCount} · <strong>Working:</strong> ${working} · <strong>Idle:</strong> ${idle}</p>
+                <p><strong>API status:</strong> ${data.status || 'N/A'} · <strong>Error:</strong> ${data.error || 'none'}</p>
+            `;
         }
+
+        // ── UI update orchestrator ────────────────────────────────────────────
 
         function updateUI() {
             updateOverview();
             updatePriorityBreakdown();
             updateJobsList();
-            updateAgents();
+            updateAgentsPanel();
             updateAgentTodos();
             updateTimeTracking();
             updateLastUpdated();
         }
 
+        // ── Overview ─────────────────────────────────────────────────────────
+
         function updateOverview() {
-            const container = document.getElementById('overview');
-            if (!container) {
-                console.log('Overview container not found');
-                return;
-            }
-            
-            const total = jobs.length;
-            const pending = jobs.filter(function(j) { return j.status === 'pending'; }).length;
-            const inProgress = jobs.filter(function(j) { return j.status === 'in_progress'; }).length;
-            const completed = jobs.filter(function(j) { return j.status === 'completed'; }).length;
-            
-            container.innerHTML = `
+            const el = document.getElementById('overview');
+            if (!el) return;
+            const total    = jobs.length;
+            const pending  = jobs.filter(j => j.status === 'pending').length;
+            const inProg   = jobs.filter(j => j.status === 'in_progress').length;
+            const done     = jobs.filter(j => j.status === 'completed').length;
+            // FIX: properly call .toFixed() on the number, not append it to a string
+            const trackedH = (timeSessions.reduce((s, x) => s + (x.duration_seconds || 0), 0) / 3600).toFixed(2);
+            el.innerHTML = `
                 <p><strong>Total Jobs:</strong> ${total}</p>
                 <p><strong>🟡 Pending:</strong> ${pending}</p>
-                <p><strong>🟠 In Progress:</strong> ${inProgress}</p>
-                <p><strong>🟢 Completed:</strong> ${completed}</p>
-                <p><strong>Completion Rate:</strong> ${total > 0 ? Math.round((completed/total)*100) : 0}%</p>
-                <p><strong>📊 Total Tracked Hours:</strong> ${timeSessions.reduce(function(sum, s) { return sum + (s.duration_seconds || 0); }, 0) / 3600}.toFixed(2)}h</p>
+                <p><strong>🟠 In Progress:</strong> ${inProg}</p>
+                <p><strong>🟢 Completed:</strong> ${done}</p>
+                <p><strong>Completion Rate:</strong> ${total > 0 ? Math.round((done/total)*100) : 0}%</p>
+                <p><strong>📊 Total Tracked Hours:</strong> ${trackedH}h</p>
             `;
         }
 
+        // ── Priority breakdown ────────────────────────────────────────────────
+
         function updatePriorityBreakdown() {
-            const container = document.getElementById('priority-breakdown');
-            if (!container) {
-                console.log('Priority breakdown container not found');
-                return;
-            }
-            
-            const activeJobs = jobs.filter(function(j) { return j.status !== 'completed'; });
-            const high = activeJobs.filter(function(j) { return j.priority === 'high'; }).length;
-            const medium = activeJobs.filter(function(j) { return j.priority === 'medium'; }).length;
-            const low = activeJobs.filter(function(j) { return j.priority === 'low'; }).length;
-            
-            container.innerHTML = `
-                <p><strong>🔴 High Priority:</strong> ${high}</p>
-                <p><strong>🟡 Medium Priority:</strong> ${medium}</p>
-                <p><strong>🔵 Low Priority:</strong> ${low}</p>
-                <p><strong>📊 Active Total:</strong> ${activeJobs.length}</p>
+            const el = document.getElementById('priority-breakdown');
+            if (!el) return;
+            const active = jobs.filter(j => j.status !== 'completed');
+            el.innerHTML = `
+                <p><strong>🔴 High:</strong> ${active.filter(j => j.priority === 'high').length}</p>
+                <p><strong>🟡 Medium:</strong> ${active.filter(j => j.priority === 'medium').length}</p>
+                <p><strong>🔵 Low:</strong> ${active.filter(j => j.priority === 'low').length}</p>
+                <p><strong>📊 Active Total:</strong> ${active.length}</p>
             `;
+        }
+
+        // ── Jobs list ─────────────────────────────────────────────────────────
+
+        function calculateJobTime(jobId) {
+            let totalSeconds = 0;
+            timeSessions.filter(s => s.job_id === jobId).forEach(s => {
+                if (s.status === 'completed' && s.duration_seconds) {
+                    totalSeconds += s.duration_seconds;
+                } else if (s.status === 'active') {
+                    totalSeconds += (Date.now()/1000 - s.start_timestamp - (s.paused_time||0));
+                }
+            });
+            return { totalSeconds, totalHours: totalSeconds/3600, formattedTime: formatDuration(totalSeconds) };
         }
 
         function updateJobsList() {
-            const container = document.getElementById('jobs-container');
-            if (!container) {
-                console.log('Jobs container not found');
+            const el = document.getElementById('jobs-container');
+            if (!el) return;
+            const active = jobs
+                .filter(j => j.status !== 'completed')
+                .sort((a,b) => ({'high':0,'medium':1,'low':2}[a.priority]||3) - ({'high':0,'medium':1,'low':2}[b.priority]||3));
+            document.getElementById('active-job-count').textContent = active.length;
+            if (active.length === 0) {
+                el.innerHTML = '<div class="loading">✅ All jobs completed!</div>';
                 return;
             }
-            
-            const activeJobs = jobs.filter(function(j) { return j.status !== 'completed'; }).sort(function(a, b) {
-                const priorityOrder = { 'high': 0, 'medium': 1, 'low': 2 };
-                return priorityOrder[a.priority] - priorityOrder[b.priority];
-            });
-            
-            document.getElementById('active-job-count').textContent = activeJobs.length;
-            
-            if (activeJobs.length === 0) {
-                container.innerHTML = '<div class="loading">✅ All jobs completed!</div>';
-                return;
-            }
-            
-            container.innerHTML = activeJobs.map(function(job) {
-                const jobTime = calculateJobTime(job.id);
+            el.innerHTML = active.map(job => {
+                const jt = calculateJobTime(job.id);
+                // FIX: guard against missing dependencies array
+                const deps = Array.isArray(job.dependencies) && job.dependencies.length
+                    ? `<p><strong>🔗 Dependencies:</strong> ${job.dependencies.join(', ')}</p>` : '';
                 return `
-                    <div class="job ${job.priority} ${job.status.replace('_', '-')}">
-                        <div class="job-title">🏷️ ${job.title}</div>
+                    <div class="job ${job.priority||''} ${(job.status||'').replace('_','-')}">
+                        <div class="job-title">🏷️ ${job.title || job.id}</div>
                         <div class="job-meta">
                             <p><strong>ID:</strong> ${job.id}</p>
-                            <p><strong>Status:</strong> ${job.status.replace('_', ' ').toUpperCase()}</p>
-                            <p><strong>Priority:</strong> ${job.priority.toUpperCase()}</p>
+                            <p><strong>Status:</strong> ${(job.status||'unknown').replace('_',' ').toUpperCase()}</p>
+                            <p><strong>Priority:</strong> ${(job.priority||'unknown').toUpperCase()}</p>
                             <p><strong>Agent:</strong> ${job.assignee || 'UNASSIGNED'}</p>
-                            <p><strong>Estimate:</strong> ${job.estimated_hours}h</p>
-                            <p><strong>Actual Time:</strong> ${jobTime.formattedTime}</p>
-                            <p><strong>Created:</strong> ${new Date(job.created_at).toLocaleString()}</p>
-                            ${job.dependencies.length > 0 ? `<p><strong>🔗 Dependencies:</strong> ${job.dependencies.join(', ')}</p>` : ''}
+                            <p><strong>Estimate:</strong> ${job.estimated_hours != null ? job.estimated_hours+'h' : 'N/A'}</p>
+                            <p><strong>Actual Time:</strong> ${jt.formattedTime}</p>
+                            <p><strong>Created:</strong> ${job.created_at ? new Date(job.created_at).toLocaleString() : 'N/A'}</p>
+                            ${deps}
                         </div>
-                    </div>
-                `;
+                    </div>`;
             }).join('');
         }
 
-        function updateAgents() {
-            // Legacy agent workload (for compatibility with time tracking)
-            const container = document.getElementById('agents-container');
-            if (!container) {
-                console.log('Legacy agents container not found');
+        // ── Agents panel ──────────────────────────────────────────────────────
+
+        function updateAgentsPanel() {
+            const el = document.getElementById('agents-status-panel');
+            if (!el) return;
+            const entries = Object.entries(agents);
+            if (entries.length === 0) {
+                el.innerHTML = '<div class="no-todos">No agents running. Click 🚀 SPAWN AGENT to start one.</div>';
                 return;
             }
-            
-            const agentStats = {};
-            
-            jobs.forEach(function(job) {
-                if (job.assignee) {
-                    if (!agentStats[job.assignee]) {
-                        agentStats[job.assignee] = { active: 0, completed: 0, trackedHours: 0 };
-                    }
-                    
-                    const jobTime = calculateJobTime(job.id);
-                    agentStats[job.assignee].trackedHours = jobTime.totalHours;
-                    
-                    if (job.status === 'completed') {
-                        agentStats[job.assignee].completed++;
-                    } else if (job.status === 'in_progress') {
-                        agentStats[job.assignee].active++;
-                    }
-                }
-            });
-            
-            container.innerHTML = Object.keys(agentStats).map(function(agent) {
-                const stats = agentStats[agent];
+            el.innerHTML = entries.map(([agentId, agent]) => {
+                const statusEmoji  = getAgentStatusEmoji(agent.status);
+                const persEmoji    = getAgentPersonalityEmoji(agent.personality);
+                const lastThought  = (agent.thoughts && agent.thoughts.length)
+                    ? agent.thoughts[agent.thoughts.length-1].thought : 'No recent thoughts';
+                const tasksComplete = (agent.metrics && agent.metrics.tasks_completed) || 0;
                 return `
-                    <div class="agent">
-                        <h4>🤖 ${agent}</h4>
-                        <p><strong>Active Jobs:</strong> ${stats.active}</p>
-                        <p><strong>Completed:</strong> ${stats.completed}</p>
-                        <p><strong>Tracked Hours:</strong> ${stats.trackedHours.toFixed(2)}h</p>
-                    </div>
-                `;
-            }).join('') + '<div class="agent"><h4>🔄 UNASSIGNED</h4><p>Ready for assignment</p></div>';
-            
-            // Update agents panel
-            updateAgentsPanel();
+                    <div class="agent-status-item ${agent.status||''}">
+                        <div class="agent-header">
+                            <span class="agent-emoji">${statusEmoji}</span>
+                            <span class="agent-emoji">${persEmoji}</span>
+                            <strong>${agentId}</strong>
+                            <span style="color:#888; font-size:0.85em;">(${agent.personality||'unknown'})</span>
+                            <button onclick="copyToCtrl('${agentId}')"
+                                style="margin-left:auto; padding:2px 8px; font-size:0.75em; background:#333;
+                                       color:#0f0; border:1px solid #555; border-radius:3px; cursor:pointer;">
+                                use ↗
+                            </button>
+                        </div>
+                        <div class="agent-details">
+                            <p><strong>Task:</strong> ${agent.current_task || 'No task assigned'}</p>
+                            <p><strong>Thought:</strong> ${lastThought}</p>
+                            <p><strong>Completed:</strong> ${tasksComplete} tasks</p>
+                            <p><strong>Since:</strong> ${agent.created_at ? new Date(agent.created_at).toLocaleString() : 'N/A'}</p>
+                        </div>
+                    </div>`;
+            }).join('');
         }
 
-        function updateTimeTracking() {
-            const container = document.getElementById('time-sessions-container');
-            if (!container) {
-                console.log('Time sessions container not found');
+        // Convenience: copy an agent ID into all the control input fields
+        function copyToCtrl(agentId) {
+            ['ctrl-assign-agent','ctrl-complete-agent','ctrl-status-agent','ctrl-kill-agent']
+                .forEach(id => { const el = document.getElementById(id); if(el) el.value = agentId; });
+            document.getElementById('agent-controls').style.display = 'block';
+        }
+
+        // ── Agent todos ───────────────────────────────────────────────────────
+
+        function updateAgentTodos() {
+            const el = document.getElementById('agent-todos-container');
+            if (!el) return;
+            if (!agentTodos || agentTodos.length === 0) {
+                el.innerHTML = '<div class="no-todos">No agent activities yet.</div>';
                 return;
             }
-            
-            const activeSessions = timeSessions.filter(function(s) { return s.status === 'active'; });
-            const currentTime = Date.now() / 1000;
-            
-            const activeCountElement = document.getElementById('active-session-count');
-            if (activeCountElement) {
-                activeCountElement.textContent = activeSessions.length;
-            } else {
-                console.log('Active session count element not found');
-            }
-            
-            if (activeSessions.length === 0) {
-                container.innerHTML = '<div class="loading">📭 No active time sessions</div>';
-                return;
-            }
-            
-            let timeHTML = '';
-            activeSessions.forEach(function(session) {
-                const currentDuration = currentTime - session.start_timestamp - session.paused_time;
-                const durationStr = formatDuration(currentDuration);
-                const startTime = new Date(session.start_timestamp * 1000).toLocaleTimeString();
-                
-                timeHTML += `
-                    <div class="time-session active">
-                        <div class="session-title">${session.session_id}</div>
-                        <div class="session-details">
-                            <p><strong>Job:</strong> ${session.job_id}</p>
-                            <p><strong>Agent:</strong> ${session.agent}</p>
-                            <p><strong>Started:</strong> ${startTime}</p>
-                            <p><strong>Duration:</strong> ${durationStr}</p>
-                            ${session.description ? `<p><strong>Note:</strong> ${session.description}</p>` : ''}
+            el.innerHTML = agentTodos.slice(0,15).map(todo => {
+                const sc = { completed:'completed', in_progress:'in-progress', cancelled:'cancelled' }[todo.status] || 'pending';
+                const personality = (todo.metadata && todo.metadata.agent_personality) || 'unknown';
+                return `
+                    <div class="todo-item ${sc}">
+                        <div class="todo-header">
+                            <span class="todo-title">${todo.title||'Untitled'}</span>
+                            <span class="todo-agent">${todo.agent_id||'?'} (${personality})</span>
                         </div>
-                    </div>
-                `;
-            });
-            
-            container.innerHTML = timeHTML;
+                        <div class="todo-description">${todo.description||''}</div>
+                        <div class="todo-meta">
+                            <span class="todo-time">${todo.created_at ? new Date(todo.created_at).toLocaleString() : ''}</span>
+                            ${todo.task_id ? `<span class="todo-task">Task: ${todo.task_id}</span>` : ''}
+                        </div>
+                    </div>`;
+            }).join('');
+        }
+
+        // ── Time tracking ────────────────────────────────────────────────────
+
+        function updateTimeTracking() {
+            const el = document.getElementById('time-sessions-container');
+            if (!el) return;
+            const active = timeSessions.filter(s => s.status === 'active');
+            const countEl = document.getElementById('active-session-count');
+            if (countEl) countEl.textContent = active.length;
+            if (active.length === 0) {
+                el.innerHTML = '<div class="loading">📭 No active time sessions</div>';
+                return;
+            }
+            const now = Date.now() / 1000;
+            el.innerHTML = active.map(s => {
+                const dur = now - s.start_timestamp - (s.paused_time||0);
+                return `
+                    <div class="time-session active">
+                        <div class="session-title">${s.session_id||'session'}</div>
+                        <div class="session-details">
+                            <p><strong>Job:</strong> ${s.job_id||'N/A'}</p>
+                            <p><strong>Agent:</strong> ${s.agent||'N/A'}</p>
+                            <p><strong>Started:</strong> ${new Date(s.start_timestamp*1000).toLocaleTimeString()}</p>
+                            <p><strong>Duration:</strong> ${formatDuration(dur)}</p>
+                            ${s.description ? `<p><strong>Note:</strong> ${s.description}</p>` : ''}
+                        </div>
+                    </div>`;
+            }).join('');
         }
 
         function updateLastUpdated() {
-            const container = document.getElementById('last-updated');
-            container.textContent = `Last updated: ${new Date().toLocaleString()}`;
+            const el = document.getElementById('last-updated');
+            if (el) el.textContent = 'Last updated: ' + new Date().toLocaleString();
         }
 
-        // Auto-refresh every 30 seconds
-        function spawnAgent() {
-            const personality = prompt('Enter agent personality (cadet, senior, specialist, researcher, debugger, optimizer):');
-            if (personality) {
-                fetch('/api/spawn-agent', {
+        // ── Spawn agent ───────────────────────────────────────────────────────
+
+        async function spawnAgent() {
+            const personalities = ['cadet','senior','specialist','researcher','debugger','optimizer'];
+            const personality = prompt(
+                'Enter agent personality:\n' + personalities.map((p,i) => `  ${i+1}. ${p}`).join('\n')
+            );
+            if (!personality) return;
+            const norm = personality.trim().toLowerCase()
+                .replace(/^\d+\.\s*/,'')  // allow "1. cadet" input
+                .replace(/\s+/g,'');
+            try {
+                const res = await fetch('/api/spawn-agent', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ personality: personality })
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.status === 'success') {
-                        alert(`Agent ${data.agent_id} spawned successfully!`);
-                        setTimeout(loadData, 1000);
-                    } else {
-                        alert(`Failed to spawn agent: ${data.error}`);
-                    }
-                })
-                .catch(error => {
-                    alert(`Error spawning agent: ${error.message}`);
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ personality: norm })
                 });
+                const data = await res.json();
+                if (data.status === 'success') {
+                    alert(`✅ Agent spawned!\nID: ${data.agent_id}\nPersonality: ${data.personality}`);
+                    setTimeout(loadData, 1200);
+                } else {
+                    alert(`❌ Failed: ${data.error}`);
+                }
+            } catch (err) {
+                alert(`❌ Network error: ${err.message}`);
             }
         }
 
-        function showAgentControls() {
-            const controls = document.getElementById('agent-controls');
-            if (controls) {
-                controls.style.display = controls.style.display === 'none' ? 'block' : 'none';
-            }
+        // ── Agent control actions ─────────────────────────────────────────────
+
+        async function ctrlPost(endpoint, body) {
+            const res = await fetch(endpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            });
+            return res.json();
         }
+
+        async function ctrlAssignTask() {
+            const agentId = document.getElementById('ctrl-assign-agent').value.trim();
+            const taskId  = document.getElementById('ctrl-assign-task').value.trim();
+            if (!agentId || !taskId) { showCtrlResult('⚠️ Agent ID and Task ID are required', false); return; }
+            try {
+                const data = await ctrlPost('/api/assign-agent', { agent_id: agentId, task_id: taskId });
+                if (data.status === 'success') {
+                    showCtrlResult(`✅ Assigned ${taskId} → ${agentId}`, true);
+                    setTimeout(loadData, 800);
+                } else {
+                    showCtrlResult(`❌ ${data.error}`, false);
+                }
+            } catch (err) { showCtrlResult(`❌ Network error: ${err.message}`, false); }
+        }
+
+        async function ctrlCompleteTask() {
+            const agentId = document.getElementById('ctrl-complete-agent').value.trim();
+            const notes   = document.getElementById('ctrl-complete-notes').value.trim();
+            const success = document.getElementById('ctrl-complete-success').value === 'true';
+            if (!agentId) { showCtrlResult('⚠️ Agent ID is required', false); return; }
+            try {
+                const data = await ctrlPost('/api/complete-task', { agent_id: agentId, success, notes });
+                if (data.status === 'success') {
+                    showCtrlResult(`✅ Task marked ${success ? 'complete' : 'failed'} for ${agentId}`, true);
+                    setTimeout(loadData, 800);
+                } else {
+                    showCtrlResult(`❌ ${data.error}`, false);
+                }
+            } catch (err) { showCtrlResult(`❌ Network error: ${err.message}`, false); }
+        }
+
+        async function ctrlUpdateStatus() {
+            const agentId = document.getElementById('ctrl-status-agent').value.trim();
+            const status  = document.getElementById('ctrl-status-value').value;
+            const thought = document.getElementById('ctrl-status-thought').value.trim() || null;
+            if (!agentId) { showCtrlResult('⚠️ Agent ID is required', false); return; }
+            try {
+                const data = await ctrlPost('/api/agent-status', { agent_id: agentId, status, thought });
+                if (data.status === 'success') {
+                    showCtrlResult(`✅ ${agentId} → ${status}`, true);
+                    setTimeout(loadData, 800);
+                } else {
+                    showCtrlResult(`❌ ${data.error}`, false);
+                }
+            } catch (err) { showCtrlResult(`❌ Network error: ${err.message}`, false); }
+        }
+
+        async function ctrlKillAgent() {
+            const agentId = document.getElementById('ctrl-kill-agent').value.trim();
+            if (!agentId) { showCtrlResult('⚠️ Agent ID is required', false); return; }
+            if (!confirm(`Kill agent ${agentId}?`)) return;
+            try {
+                const data = await ctrlPost('/api/kill-agent', { agent_id: agentId });
+                if (data.status === 'success') {
+                    showCtrlResult(`✅ Agent ${agentId} killed`, true);
+                    setTimeout(loadData, 800);
+                } else {
+                    showCtrlResult(`❌ ${data.error}`, false);
+                }
+            } catch (err) { showCtrlResult(`❌ Network error: ${err.message}`, false); }
+        }
+
+        // ── Auto-refresh ──────────────────────────────────────────────────────
 
         function startAutoRefresh() {
-            if (refreshInterval) {
-                clearInterval(refreshInterval);
-            }
-            refreshInterval = setInterval(function() {
-                console.log('Auto-refreshing...');
-                loadData();
-            }, 30000);
+            if (refreshInterval) clearInterval(refreshInterval);
+            refreshInterval = setInterval(loadData, 30000);
         }
 
-        // Initialize
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('🚀 Stratavore Job Tracker v3 loaded - Parallel Agent System');
+        document.addEventListener('DOMContentLoaded', () => {
             loadData();
             startAutoRefresh();
         });
 
-        // Cleanup on page unload
-        window.addEventListener('beforeunload', function() {
-            if (refreshInterval) {
-                clearInterval(refreshInterval);
-            }
+        window.addEventListener('beforeunload', () => {
+            if (refreshInterval) clearInterval(refreshInterval);
         });
     </script>
 </body>

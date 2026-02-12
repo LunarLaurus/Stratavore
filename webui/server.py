@@ -115,10 +115,10 @@ class JobTrackerHandler(http.server.SimpleHTTPRequestHandler):
             self._handle_api_status()
         elif parsed_path.path == "/api/health":
             self._handle_api_health()
+        elif parsed_path.path == "/api/agents":
+            self._handle_api_agents()
         else:
             # Let SimpleHTTPRequestHandler serve static files.
-            # Do NOT call send_response / send_header before this – the parent
-            # manages its own response lifecycle.
             super().do_GET()
 
     def do_POST(self):
@@ -126,6 +126,14 @@ class JobTrackerHandler(http.server.SimpleHTTPRequestHandler):
 
         if parsed_path.path == "/api/spawn-agent":
             self._handle_spawn_agent()
+        elif parsed_path.path == "/api/assign-agent":
+            self._handle_assign_agent()
+        elif parsed_path.path == "/api/complete-task":
+            self._handle_complete_task()
+        elif parsed_path.path == "/api/agent-status":
+            self._handle_agent_status()
+        elif parsed_path.path == "/api/kill-agent":
+            self._handle_kill_agent()
         else:
             self.send_error(404, f"Unknown endpoint: {parsed_path.path}")
 
@@ -145,9 +153,12 @@ class JobTrackerHandler(http.server.SimpleHTTPRequestHandler):
             progress_path = os.path.join(_ROOT, "jobs", "progress.json")
             try:
                 with open(progress_path, "r", encoding="utf-8") as fh:
-                    progress = json.load(fh)
-            except (FileNotFoundError, json.JSONDecodeError) as exc:
-                print(f"[WARN] Could not read progress.json: {exc}")
+                    raw_progress = fh.read().strip()
+                    if raw_progress.startswith("{") or raw_progress.startswith("["):
+                        progress = json.loads(raw_progress)
+                    # else: markdown/text progress file — leave progress as {}
+            except (FileNotFoundError, json.JSONDecodeError):
+                pass
 
             time_sessions = _load_jsonl(
                 os.path.join(_ROOT, "jobs", "time_sessions.jsonl")
@@ -188,51 +199,178 @@ class JobTrackerHandler(http.server.SimpleHTTPRequestHandler):
 
     def _handle_spawn_agent(self):
         try:
-            content_length = int(self.headers.get("Content-Length", 0))
-            raw = self.rfile.read(content_length)
-            data = json.loads(raw.decode("utf-8"))
-
+            data = self._read_json_body()
             personality = data.get("personality")
             if not personality:
-                self._respond_json(
-                    400, {"status": "error", "error": "No personality specified"}
-                )
+                self._respond_json(400, {"status": "error", "error": "No personality specified"})
                 return
 
             agents_dir = os.path.join(_ROOT, "agents")
             if agents_dir not in sys.path:
                 sys.path.insert(0, agents_dir)
-
             from agent_manager import AgentManager, AgentPersonality  # type: ignore
 
             manager = AgentManager()
             try:
                 personality_enum = AgentPersonality(personality.lower())
             except ValueError:
-                self._respond_json(
-                    400,
-                    {"status": "error", "error": f"Invalid personality: {personality}"},
-                )
+                valid = [p.value for p in AgentPersonality]
+                self._respond_json(400, {"status": "error", "error": f"Invalid personality {personality!r}. Valid: {valid}"})
                 return
 
-            agent_id = manager.spawn_agent(personality_enum)
-            self._respond_json(
-                200,
-                {
-                    "status": "success",
-                    "agent_id": agent_id,
-                    "personality": personality,
-                },
-            )
+            task_id = data.get("task_id", None)
+            agent_id = manager.spawn_agent(personality_enum, task_id)
+            self._respond_json(200, {"status": "success", "agent_id": agent_id, "personality": personality})
 
         except json.JSONDecodeError as exc:
             self._respond_json(400, {"status": "error", "error": f"Bad JSON: {exc}"})
         except Exception as exc:
             self._respond_json(500, {"status": "error", "error": str(exc)})
 
+    def _handle_api_agents(self):
+        """Return full agent data plus summary — same data as /api/status but agents-focused."""
+        try:
+            agents = _load_prefixed_jsonl(
+                os.path.join(_ROOT, "agents", "active_agents.jsonl")
+            )
+            agent_todos = _load_prefixed_jsonl_list(
+                os.path.join(_ROOT, "agents", "agent_todos.jsonl")
+            )
+            # Compute simple summary
+            summary = {
+                "total": len(agents),
+                "by_status": {},
+                "by_personality": {},
+            }
+            for a in agents.values():
+                s = a.get("status", "unknown")
+                p = a.get("personality", "unknown")
+                summary["by_status"][s] = summary["by_status"].get(s, 0) + 1
+                summary["by_personality"][p] = summary["by_personality"].get(p, 0) + 1
+
+            self._respond_json(200, {
+                "status": "success",
+                "agents": agents,
+                "agent_todos": agent_todos,
+                "summary": summary,
+                "timestamp": time.time(),
+            })
+        except Exception as exc:
+            self._respond_json(500, {"status": "error", "error": str(exc)})
+
+    def _handle_assign_agent(self):
+        """POST /api/assign-agent  body: {agent_id, task_id}"""
+        try:
+            data = self._read_json_body()
+            agent_id = data.get("agent_id", "").strip()
+            task_id = data.get("task_id", "").strip()
+            if not agent_id or not task_id:
+                self._respond_json(400, {"status": "error", "error": "agent_id and task_id are required"})
+                return
+            manager = self._get_manager()
+            ok = manager.assign_task(agent_id, task_id)
+            if ok:
+                self._respond_json(200, {"status": "success", "agent_id": agent_id, "task_id": task_id})
+            else:
+                self._respond_json(400, {"status": "error", "error": f"Could not assign task — agent {agent_id!r} not found or not available"})
+        except Exception as exc:
+            self._respond_json(500, {"status": "error", "error": str(exc)})
+
+    def _handle_complete_task(self):
+        """POST /api/complete-task  body: {agent_id, success?, notes?}"""
+        try:
+            data = self._read_json_body()
+            agent_id = data.get("agent_id", "").strip()
+            if not agent_id:
+                self._respond_json(400, {"status": "error", "error": "agent_id is required"})
+                return
+            success = bool(data.get("success", True))
+            notes = data.get("notes", "")
+            manager = self._get_manager()
+            ok = manager.complete_task(agent_id, success, notes)
+            if ok:
+                self._respond_json(200, {"status": "success", "agent_id": agent_id, "success": success})
+            else:
+                self._respond_json(400, {"status": "error", "error": f"Agent {agent_id!r} not found"})
+        except Exception as exc:
+            self._respond_json(500, {"status": "error", "error": str(exc)})
+
+    def _handle_agent_status(self):
+        """POST /api/agent-status  body: {agent_id, status, thought?}"""
+        try:
+            data = self._read_json_body()
+            agent_id = data.get("agent_id", "").strip()
+            status_str = data.get("status", "").strip()
+            if not agent_id or not status_str:
+                self._respond_json(400, {"status": "error", "error": "agent_id and status are required"})
+                return
+
+            agents_dir = os.path.join(_ROOT, "agents")
+            if agents_dir not in sys.path:
+                sys.path.insert(0, agents_dir)
+            from agent_manager import AgentManager, AgentStatus  # type: ignore
+
+            try:
+                status_enum = AgentStatus(status_str.lower())
+            except ValueError:
+                valid = [s.value for s in AgentStatus]
+                self._respond_json(400, {"status": "error", "error": f"Invalid status {status_str!r}. Valid: {valid}"})
+                return
+
+            thought = data.get("thought", None)
+            manager = AgentManager()
+            manager.update_agent_status(agent_id, status_enum, thought)
+            self._respond_json(200, {"status": "success", "agent_id": agent_id, "new_status": status_str})
+        except Exception as exc:
+            self._respond_json(500, {"status": "error", "error": str(exc)})
+
+    def _handle_kill_agent(self):
+        """POST /api/kill-agent  body: {agent_id}  — marks agent as error/stopped."""
+        try:
+            data = self._read_json_body()
+            agent_id = data.get("agent_id", "").strip()
+            if not agent_id:
+                self._respond_json(400, {"status": "error", "error": "agent_id is required"})
+                return
+
+            agents_dir = os.path.join(_ROOT, "agents")
+            if agents_dir not in sys.path:
+                sys.path.insert(0, agents_dir)
+            from agent_manager import AgentManager, AgentStatus  # type: ignore
+
+            manager = AgentManager()
+            if agent_id not in manager.agents:
+                self._respond_json(404, {"status": "error", "error": f"Agent {agent_id!r} not found"})
+                return
+            manager.update_agent_status(agent_id, AgentStatus.ERROR, "Killed via web UI")
+            self._respond_json(200, {"status": "success", "agent_id": agent_id})
+        except Exception as exc:
+            self._respond_json(500, {"status": "error", "error": str(exc)})
+
     # --- Helpers --------------------------------------------------------------
 
+    def _read_json_body(self) -> dict:
+        """Read and parse the request body as JSON."""
+        content_length = int(self.headers.get("Content-Length", 0))
+        raw = self.rfile.read(content_length)
+        return json.loads(raw.decode("utf-8")) if raw else {}
+
+    def _get_manager(self):
+        """Import and return an AgentManager instance."""
+        agents_dir = os.path.join(_ROOT, "agents")
+        if agents_dir not in sys.path:
+            sys.path.insert(0, agents_dir)
+        from agent_manager import AgentManager  # type: ignore
+        return AgentManager()
+
     def _respond_json(self, status: int, payload: dict):
+        body = json.dumps(payload, indent=2).encode("utf-8")
+        self.send_response(status)
+        self._send_cors_headers()
+        self.send_header("Content-Type", "application/json; charset=utf-8")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
         body = json.dumps(payload, indent=2).encode("utf-8")
         self.send_response(status)
         self._send_cors_headers()

@@ -5,6 +5,7 @@ Manages agent spawning, task assignment, and status monitoring
 """
 
 import json
+import os
 import time
 import sys
 import subprocess
@@ -32,10 +33,14 @@ class AgentPersonality(Enum):
 
 class AgentManager:
     def __init__(self):
-        self.agents_file = "agents/active_agents.jsonl"
-        self.personalities_file = "agents/agent_personalities.json"
-        self.commands_file = "agents/agent_commands.jsonl"
-        self.todos_file = "agents/agent_todos.jsonl"
+        # Resolve paths relative to this file so the manager works correctly
+        # regardless of the current working directory (e.g. when imported by
+        # webui/server.py which chdir-s to the webui/ folder).
+        _here = os.path.dirname(os.path.abspath(__file__))
+        self.agents_file = os.path.join(_here, "active_agents.jsonl")
+        self.personalities_file = os.path.join(_here, "agent_personalities.json")
+        self.commands_file = os.path.join(_here, "agent_commands.jsonl")
+        self.todos_file = os.path.join(_here, "agent_todos.jsonl")
         self._lock = threading.Lock()  # Protects concurrent file writes
         self.ensure_files_exist()
         self.agents = {}
@@ -63,23 +68,31 @@ class AgentManager:
     
     def load_agent_data(self):
         """Load existing agent data"""
-        # Load active agents
+        # Load active agents safely
+        self.agents = {}
         try:
             with open(self.agents_file, 'r') as f:
-                content = f.read().strip()
-                if content:
-                    self.agents = {line.split(' ', 1)[0]: json.loads(line.split(' ', 1)[1]) 
-                                   for line in content.split('\n') if line.strip()}
+                for line in f:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    parts = line.split(' ', 1)
+                    if len(parts) != 2:
+                        continue
+                    try:
+                        self.agents[parts[0]] = json.loads(parts[1])
+                    except json.JSONDecodeError as exc:
+                        print(f"[WARN] Skipping malformed agent line: {exc}")
         except FileNotFoundError:
-            self.agents = {}
-        
-        # Load personalities if not exist
+            pass
+
+        # Load personalities
         try:
             with open(self.personalities_file, 'r') as f:
                 self.personalities = json.load(f)
-        except FileNotFoundError:
+        except (FileNotFoundError, json.JSONDecodeError):
             self.create_default_personalities()
-        
+
         # Check for stuck spawning agents on startup
         self.unstuck_spawning_agents()
     
