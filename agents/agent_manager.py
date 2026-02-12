@@ -180,7 +180,7 @@ class AgentManager:
         self.save_agent(agent_id, agent_data)
         
         personality_data = self.personalities.get(personality.value, {"name": "Unknown Agent", "description": "No description", "strengths": [], "specialties": []})
-        print(f"🚀 Spawning {personality.value} agent: {agent_id}")
+        print(f"SPAWNING {personality.value} agent: {agent_id}")
         print(f"   Personality: {personality_data['name']}")
         print(f"   Task: {task_id or 'No task assigned'}")
         
@@ -206,13 +206,13 @@ class AgentManager:
     def assign_task(self, agent_id: str, task_id: str) -> bool:
         """Assign a task to an agent"""
         if agent_id not in self.agents:
-            print(f"❌ Agent {agent_id} not found")
+            print(f"ERROR: Agent {agent_id} not found")
             return False
         
         agent = self.agents[agent_id]
         
         if agent["status"] not in [AgentStatus.IDLE.value, AgentStatus.COMPLETED.value]:
-            print(f"❌ Agent {agent_id} is not available (status: {agent['status']})")
+            print(f"ERROR: Agent {agent_id} is not available (status: {agent['status']})")
             return False
         
         agent["current_task"] = task_id
@@ -284,7 +284,7 @@ class AgentManager:
         
         for agent_id in stuck_agents:
             self.update_agent_status(agent_id, AgentStatus.IDLE, "Auto-recovered from stuck spawning state")
-            print(f"🔧 Recovered stuck agent {agent_id} from spawning state")
+            print(f"RECOVERED stuck agent {agent_id} from spawning state")
         
         return stuck_agents
     
@@ -441,7 +441,7 @@ class AgentManager:
         self.save_agent(agent_id, agent)
         
         result = "SUCCESS" if success else "FAILED"
-        print(f"✅ Marked task {task_id} as {result} for agent {agent_id}")
+        print(f"Marked task {task_id} as {result} for agent {agent_id}")
         return True
     
     def get_available_agents(self, personality: Optional[AgentPersonality] = None) -> List[str]:
@@ -515,9 +515,9 @@ def main():
         try:
             personality_enum = AgentPersonality(personality_str.lower())
             agent_id = manager.spawn_agent(personality_enum, task_id)
-            print(f"✅ Spawned agent: {agent_id}")
+            print(f"SUCCESS: Spawned agent: {agent_id}")
         except ValueError:
-            print(f"❌ Invalid personality: {personality_str}")
+            print(f"ERROR: Invalid personality: {personality_str}")
             print(f"Available personalities: {[p.value for p in AgentPersonality]}")
     
     elif command == "list":
@@ -528,27 +528,27 @@ def main():
                 personality_enum = AgentPersonality(personality_filter.lower())
                 agents = [aid for aid, data in manager.agents.items() 
                           if data["personality"] == personality_enum.value]
-                print(f"🤖 {personality_filter} agents ({len(agents)}):")
+                print(f"{personality_filter} agents ({len(agents)}):")
             except ValueError:
-                print(f"❌ Invalid personality: {personality_filter}")
+                print(f"ERROR: Invalid personality: {personality_filter}")
                 return
         else:
             agents = list(manager.agents.keys())
-            print(f"🤖 All agents ({len(agents)}):")
+            print(f"All agents ({len(agents)}):")
         
         for agent_id in agents:
             agent = manager.agents[agent_id]
-            status_emoji = {
-                "idle": "😴",
-                "working": "🔨", 
-                "spawning": "🚀",
-                "completed": "✅",
-                "error": "❌"
-            }.get(agent["status"], "❓")
+            status_symbol = {
+                "idle": "[IDLE]",
+                "working": "[WORK]", 
+                "spawning": "[SPAWN]",
+                "completed": "[DONE]",
+                "error": "[ERROR]"
+            }.get(agent["status"], "[???]")
             
-            print(f"  {status_emoji} {agent_id} ({agent['personality']}) - {agent['status']}")
+            print(f"  {status_symbol} {agent_id} ({agent['personality']}) - {agent['status']}")
             if agent.get("current_task"):
-                print(f"      📋 Task: {agent['current_task']}")
+                print(f"      Task: {agent['current_task']}")
     
     elif command == "available":
         personality_filter_str = sys.argv[2] if len(sys.argv) > 2 else None
@@ -558,18 +558,18 @@ def main():
             available = manager.get_available_agents(personality_filter)
             
             if available:
-                print(f"✅ Available agents ({len(available)}):")
+                print(f"Available agents ({len(available)}):")
                 for agent_id in available:
                     agent = manager.agents[agent_id]
-                    print(f"  🤖 {agent_id} ({agent['personality']})")
+                    print(f"  {agent_id} ({agent['personality']})")
             else:
-                print("📭 No available agents")
+                print("No available agents")
         except ValueError:
-            print(f"❌ Invalid personality: {personality_filter_str}")
+            print(f"ERROR: Invalid personality: {personality_filter_str}")
     
     elif command == "summary":
         summary = manager.get_agent_summary()
-        print(f"📊 AGENT SUMMARY")
+        print(f"AGENT SUMMARY")
         print(f"Total agents: {summary['total_agents']}")
         print(f"Working: {summary['working_agents']}")
         print(f"Idle: {summary['idle_agents']}")
@@ -577,18 +577,17 @@ def main():
         
         print(f"\nBy status:")
         for status, count in summary["by_status"].items():
-            emoji = {"idle": "😴", "working": "🔨", "completed": "✅"}.get(status, "❓")
-            print(f"  {emoji} {status}: {count}")
+            print(f"  {status}: {count}")
         
         print(f"\nBy personality:")
         for personality, count in summary["by_personality"].items():
-            print(f"  🤖 {personality}: {count}")
+            print(f"  {personality}: {count}")
     
     elif command == "personalities":
-        print("🎭 Available Agent Personalities:")
+        print("Available Agent Personalities:")
         for personality in AgentPersonality:
             p = manager.personalities.get(personality.value, {})
-            print(f"  🎭 {personality.value}")
+            print(f"  {personality.value}")
             print(f"      Name: {p.get('name', 'Unknown')}")
             print(f"      Description: {p.get('description', 'No description')}")
             print(f"      Strengths: {', '.join(p.get('strengths', []))}")
@@ -604,9 +603,9 @@ def main():
         task_id = sys.argv[3]
         
         if manager.assign_task(agent_id, task_id):
-            print(f"✅ Assigned task {task_id} to agent {agent_id}")
+            print(f"SUCCESS: Assigned task {task_id} to agent {agent_id}")
         else:
-            print(f"❌ Failed to assign task")
+            print(f"ERROR: Failed to assign task")
     
     elif command == "status":
         if len(sys.argv) < 4:
@@ -620,11 +619,11 @@ def main():
         try:
             status_enum = AgentStatus(status_str.lower())
             manager.update_agent_status(agent_id, status_enum, thought)
-            print(f"✅ Updated {agent_id} status to {status_str}")
+            print(f"SUCCESS: Updated {agent_id} status to {status_str}")
             if thought:
-                print(f"💭 Thought: {thought}")
+                print(f"Thought: {thought}")
         except ValueError:
-            print(f"❌ Invalid status: {status_str}")
+            print(f"ERROR: Invalid status: {status_str}")
             print(f"Available statuses: {[s.value for s in AgentStatus]}")
     
     elif command == "complete":
@@ -638,19 +637,19 @@ def main():
         
         if manager.complete_task(agent_id, success, notes):
             result = "SUCCESS" if success else "FAILED"
-            print(f"✅ Marked task as {result} for agent {agent_id}")
+            print(f"SUCCESS: Marked task as {result} for agent {agent_id}")
         else:
-            print(f"❌ Failed to complete task for agent {agent_id}")
+            print(f"ERROR: Failed to complete task for agent {agent_id}")
     
     elif command == "unstuck-spawning":
         stuck_agents = manager.unstuck_spawning_agents()
         if stuck_agents:
-            print(f"🔧 Unstuck {len(stuck_agents)} agents from spawning state")
+            print(f"RECOVERED {len(stuck_agents)} agents from spawning state")
         else:
-            print("✅ No agents stuck in spawning state")
+            print("No agents stuck in spawning state")
     
     else:
-        print(f"❌ Unknown command: {command}")
+        print(f"ERROR: Unknown command: {command}")
 
 if __name__ == "__main__":
     main()
