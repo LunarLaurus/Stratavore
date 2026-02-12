@@ -328,4 +328,4 @@ sudo make install
 
 ---
 
-**You're now ready to orchestrate AI development at scale with Stratavore!** 🚀
+**You're now ready to orchestrate AI development at scale with Stratavore!** 

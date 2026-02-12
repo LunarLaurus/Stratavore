@@ -4,13 +4,13 @@ Welcome to the Stratavore documentation. Stratavore is a comprehensive workspace
 
 ## Documentation Structure
 
-### 👥 User Documentation
+### User Documentation
 - [Quick Start Guide](user/quick-start.md) - Get up and running in 5 minutes
 - [User Guide](user/guide.md) - Comprehensive user manual
 - [CLI Reference](user/cli.md) - Complete command reference
 - [Configuration](user/configuration.md) - Configuration options and examples
 
-### 🛠️ Developer Documentation  
+### Developer Documentation 
 - [Architecture](developer/architecture.md) - System design and architecture
 - [Development Guide](developer/development.md) - Setting up development environment
 - [Testing](developer/testing.md) - Testing strategies and guidelines
@@ -18,7 +18,7 @@ Welcome to the Stratavore documentation. Stratavore is a comprehensive workspace
 - [Contributing](developer/contributing.md) - How to contribute to Stratavore
 - [Agents Guide](developer/agents.md) - For coding agents working on this project
 
-### 🚀 Operations Documentation
+### Operations Documentation
 - [Deployment Guide](operations/deployment.md) - Production deployment
 - [Monitoring](operations/monitoring.md) - Monitoring and observability
 - [Troubleshooting](operations/troubleshooting.md) - Common issues and solutions
@@ -26,7 +26,7 @@ Welcome to the Stratavore documentation. Stratavore is a comprehensive workspace
 - [Windows Support](operations/windows.md) - Windows-specific instructions
 - [Releases](operations/releases/) - Individual release notes
 
-### 📡 API Documentation
+### API Documentation
 - [gRPC API](api/grpc.md) - gRPC service definitions
 - [Protocol Buffers](api/protobuf.md) - Protobuf schema documentation
 - [Events API](api/events.md) - Event system reference

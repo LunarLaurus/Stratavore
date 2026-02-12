@@ -2,79 +2,79 @@
 
 **Last Updated: February 11, 2026 - Final**
 
-## 🚀 Current Version: v1.4 - Docker Proto Builder + Security + Grafana
-**Status: 97% Complete** ✅  
+## Current Version: v1.4 - Docker Proto Builder + Security + Grafana
+**Status: 97% Complete** COMPLETE 
 **Released: February 11, 2026**
 
 ### Latest Sprint: Phase 9 - Docker Builder, Auth, Cache Manager, Grafana
-**Status: COMPLETE**  
+**Status: COMPLETE** 
 **Started: February 11, 2026**
 
-### Sprint 9 Objectives - ALL COMPLETE ✅
-1. ✅ `internal/cache/manager.go` — cache-aside wrapper with pass-through fallback
-2. ✅ `internal/auth/jwt.go` — HMAC JWT validator + HTTP middleware
-3. ✅ `internal/auth/ratelimit.go` — per-client token-bucket rate limiter
-4. ✅ `Dockerfile.builder` — multi-stage Docker build with protoc + gRPC plugins
-5. ✅ `docker-compose.builder.yml` — optional proto build / gRPC stack override
-6. ✅ Grafana overview dashboard — rewritten with modern panel types (20+ panels)
-7. ✅ Grafana runner-metrics dashboard — new, with CPU/memory/latency/budget rows
-8. ✅ Makefile new targets: `docker-build-proto`, `docker-up-grpc`, `docker-proto-shell`
+### Sprint 9 Objectives - ALL COMPLETE COMPLETE
+1. COMPLETE `internal/cache/manager.go` — cache-aside wrapper with pass-through fallback
+2. COMPLETE `internal/auth/jwt.go` — HMAC JWT validator + HTTP middleware
+3. COMPLETE `internal/auth/ratelimit.go` — per-client token-bucket rate limiter
+4. COMPLETE `Dockerfile.builder` — multi-stage Docker build with protoc + gRPC plugins
+5. COMPLETE `docker-compose.builder.yml` — optional proto build / gRPC stack override
+6. COMPLETE Grafana overview dashboard — rewritten with modern panel types (20+ panels)
+7. COMPLETE Grafana runner-metrics dashboard — new, with CPU/memory/latency/budget rows
+8. COMPLETE Makefile new targets: `docker-build-proto`, `docker-up-grpc`, `docker-proto-shell`
 
 ### Previous Sprint: Phase 8 - gRPC & Protobuf Integration (COMPLETE)
-1. ✅ Protobuf code generation in build scripts
-2. ✅ Auto-detection of protobuf tools
-3. ✅ Graceful fallback to HTTP API
-4. ✅ Complete protobuf setup guide
-5. ✅ Updated all build scripts (Windows + Linux)
-6. ✅ Version 1.3.0 finalization
+1. COMPLETE Protobuf code generation in build scripts
+2. COMPLETE Auto-detection of protobuf tools
+3. COMPLETE Graceful fallback to HTTP API
+4. COMPLETE Complete protobuf setup guide
+5. COMPLETE Updated all build scripts (Windows + Linux)
+6. COMPLETE Version 1.3.0 finalization
 
 ### Completed Today (Feb 11, 2026 - Final)
 **gRPC Support:**
-- ✅ Protobuf generation integrated in Makefile
-- ✅ PowerShell build script with proto support
-- ✅ Batch file with proto support
-- ✅ Auto-detection of protoc and plugins
-- ✅ Graceful fallback to HTTP when tools missing
-- ✅ Complete PROTOBUF.md setup guide
+- COMPLETE Protobuf generation integrated in Makefile
+- COMPLETE PowerShell build script with proto support
+- COMPLETE Batch file with proto support
+- COMPLETE Auto-detection of protoc and plugins
+- COMPLETE Graceful fallback to HTTP when tools missing
+- COMPLETE Complete PROTOBUF.md setup guide
 
 **Build Improvements:**
-- ✅ Smart tool detection
-- ✅ Colored output (PowerShell)
-- ✅ Clear status messages
-- ✅ Works with or without protobuf
+- COMPLETE Smart tool detection
+- COMPLETE Colored output (PowerShell)
+- COMPLETE Clear status messages
+- COMPLETE Works with or without protobuf
 
 ---
 
-## 📊 Version History
+## Version History
 
-### v1.3 (Feb 11, 2026 - Final) - 99% Complete ✅
+### v1.3 (Feb 11, 2026 - Final) - 99% Complete COMPLETE
 **gRPC Integration:**
-- ✅ Protobuf code generation
-- ✅ Auto-detection in build scripts
-- ✅ Fallback to HTTP API
-- ✅ Setup documentation
+- COMPLETE Protobuf code generation
+- COMPLETE Auto-detection in build scripts
+- COMPLETE Fallback to HTTP API
+- COMPLETE Setup documentation
 
 **Build System:**
-- ✅ Smart proto generation
-- ✅ Tool detection
-- ✅ Clear feedback
+- COMPLETE Smart proto generation
+- COMPLETE Tool detection
+- COMPLETE Clear feedback
 
 ### v1.2 (Feb 11, 2026 - Morning) - 98% Complete
 
 #### New Components
-1. **HTTP API Server** ✅
+1. **HTTP API Server** COMPLETE
    - 9 REST endpoints
    - JSON request/response
    - Health checks
    - 30s timeouts
 
-2. **HTTP Client Library** ✅
+2. **HTTP Client Library** COMPLETE
    - Type-safe API
    - Context support
    - Error handling
    - Ping/health checks
 
-3. **Fully Functional CLI** ✅
+3. **Fully Functional CLI** COMPLETE
    - `new` - Create projects
    - `launch` - Start runners
    - `status` - Daemon status
@@ -86,13 +86,13 @@
 ### Phase 3 Complete (February 9, 2026)
 **Achievement: 82% Complete**
 
-1. **Telegram Bot Integration** ✅
+1. **Telegram Bot Integration** COMPLETE
    - Replaced ntfy
    - Rich markdown formatting
    - Priority-based alerts
    - Custom messages
 
-2. **Token Budget System** ✅
+2. **Token Budget System** COMPLETE
    - Multi-scope budgets
    - Automatic rollover
    - Warning notifications
@@ -101,111 +101,111 @@
 ### Phase 2 Complete (February 9, 2026)
 **Achievement: 75% Complete**
 
-1. **gRPC API Server** ✅
-2. **Prometheus Metrics** ✅
-3. **Session Manager** ✅
-4. **Enhanced Database** ✅
+1. **gRPC API Server** COMPLETE
+2. **Prometheus Metrics** COMPLETE
+3. **Session Manager** COMPLETE
+4. **Enhanced Database** COMPLETE
 
 ### Phase 1 Complete (February 10, 2026 - Earlier)
 **Achievement: 60% Complete - Foundation**
 
-1. **Database Schema** ✅
-2. **PostgreSQL Storage** ✅
-3. **RabbitMQ Messaging** ✅
-4. **Outbox Publisher** ✅
-5. **Runner Manager** ✅
-6. **Basic CLI** ✅
+1. **Database Schema** COMPLETE
+2. **PostgreSQL Storage** COMPLETE
+3. **RabbitMQ Messaging** COMPLETE
+4. **Outbox Publisher** COMPLETE
+5. **Runner Manager** COMPLETE
+6. **Basic CLI** COMPLETE
 
 ---
 
-## 🎯 Current Status: 92% Complete
+## Current Status: 92% Complete
 
 | Component | Status | Completion | Last Updated |
 |-----------|--------|------------|--------------|
-| **Core Infrastructure** | ✅ Complete | 100% | Feb 9 |
-| Database Schema | ✅ Complete | 100% | Feb 9 |
-| PostgreSQL Storage | ✅ Complete | 100% | Feb 9 |
-| RabbitMQ Messaging | ✅ Complete | 100% | Feb 9 |
-| Outbox Publisher | ✅ Complete | 100% | Feb 9 |
-| **Daemon Services** | ✅ Complete | 100% | Feb 10 |
-| Runner Manager | ✅ Complete | 100% | Feb 9 |
-| HTTP API Server | ✅ Complete | 100% | Feb 9 |
-| Metrics Server | ✅ Complete | 100% | Feb 9 |
-| Notifications (Telegram) | ✅ Complete | 100% | Feb 9 |
-| Session Manager | ✅ Complete | 100% | Feb 9 |
-| Budget System | ⏳ Partial | 95% | Feb 10 |
-| **Applications** | ✅ Complete | 100% | Feb 10 |
-| stratavored (daemon) | ✅ Complete | 100% | Feb 9 |
-| stratavore (CLI) | ✅ Complete | 100% | Feb 9 |
-| stratavore-agent | ⏳ Enhanced | 95% | Feb 10 |
-| **Client Libraries** | ✅ Complete | 100% | Feb 9 |
-| HTTP Client | ✅ Complete | 100% | Feb 9 |
-| API Types | ✅ Complete | 100% | Feb 9 |
-| **Observability** | ✅ Complete | 100% | Feb 9 |
-| Prometheus Metrics | ✅ Complete | 100% | Feb 9 |
-| Structured Logging | ✅ Complete | 100% | Feb 9 |
-| **Testing** | ⏳ TODO | 0% | - |
-| Unit Tests | ⏳ TODO | 0% | - |
-| Integration Tests | ⏳ TODO | 0% | - |
-| E2E Tests | ⏳ TODO | 0% | - |
+| **Core Infrastructure** | COMPLETE Complete | 100% | Feb 9 |
+| Database Schema | COMPLETE Complete | 100% | Feb 9 |
+| PostgreSQL Storage | COMPLETE Complete | 100% | Feb 9 |
+| RabbitMQ Messaging | COMPLETE Complete | 100% | Feb 9 |
+| Outbox Publisher | COMPLETE Complete | 100% | Feb 9 |
+| **Daemon Services** | COMPLETE Complete | 100% | Feb 10 |
+| Runner Manager | COMPLETE Complete | 100% | Feb 9 |
+| HTTP API Server | COMPLETE Complete | 100% | Feb 9 |
+| Metrics Server | COMPLETE Complete | 100% | Feb 9 |
+| Notifications (Telegram) | COMPLETE Complete | 100% | Feb 9 |
+| Session Manager | COMPLETE Complete | 100% | Feb 9 |
+| Budget System | BLOCKED Partial | 95% | Feb 10 |
+| **Applications** | COMPLETE Complete | 100% | Feb 10 |
+| stratavored (daemon) | COMPLETE Complete | 100% | Feb 9 |
+| stratavore (CLI) | COMPLETE Complete | 100% | Feb 9 |
+| stratavore-agent | BLOCKED Enhanced | 95% | Feb 10 |
+| **Client Libraries** | COMPLETE Complete | 100% | Feb 9 |
+| HTTP Client | COMPLETE Complete | 100% | Feb 9 |
+| API Types | COMPLETE Complete | 100% | Feb 9 |
+| **Observability** | COMPLETE Complete | 100% | Feb 9 |
+| Prometheus Metrics | COMPLETE Complete | 100% | Feb 9 |
+| Structured Logging | COMPLETE Complete | 100% | Feb 9 |
+| **Testing** | BLOCKED TODO | 0% | - |
+| Unit Tests | BLOCKED TODO | 0% | - |
+| Integration Tests | BLOCKED TODO | 0% | - |
+| E2E Tests | BLOCKED TODO | 0% | - |
 
 ---
 
-## 📈 Code Statistics (As of Feb 10, 2026)
+## Code Statistics (As of Feb 10, 2026)
 
 ```
-Total Files:       52
-Total Lines:       6,200+
-  Go Code:         5,200+
-  SQL:             800+
-  Documentation:   28,000+ words
+Total Files: 52
+Total Lines: 6,200+
+  Go Code: 5,200+
+  SQL: 800+
+  Documentation: 28,000+ words
 
 Recent Additions (Phase 5):
-  Agent Updates:      +100 lines
+  Agent Updates: +100 lines
   Budget Integration: +50 lines (in progress)
-  Test Framework:     TBD
+  Test Framework: TBD
 ```
 
 ---
 
-## 🔥 Production Features (All Working)
+## Production Features (All Working)
 
-1. ✅ **Zero Message Loss** - Transactional outbox
-2. ✅ **Real-Time Alerts** - Telegram notifications
-3. ✅ **Token Governance** - Budget enforcement (95%)
-4. ✅ **Live Monitoring** - Terminal dashboard + Prometheus
-5. ✅ **HTTP API** - RESTful daemon control
-6. ✅ **CLI Integration** - Full command set
-7. ✅ **Heartbeat System** - HTTP-based (new!)
-8. ✅ **Event System** - RabbitMQ with confirms
-9. ✅ **Session Tracking** - Persistence + resumption
-10. ✅ **Auto-Recovery** - Stale runner cleanup
+1. COMPLETE **Zero Message Loss** - Transactional outbox
+2. COMPLETE **Real-Time Alerts** - Telegram notifications
+3. COMPLETE **Token Governance** - Budget enforcement (95%)
+4. COMPLETE **Live Monitoring** - Terminal dashboard + Prometheus
+5. COMPLETE **HTTP API** - RESTful daemon control
+6. COMPLETE **CLI Integration** - Full command set
+7. COMPLETE **Heartbeat System** - HTTP-based (new!)
+8. COMPLETE **Event System** - RabbitMQ with confirms
+9. COMPLETE **Session Tracking** - Persistence + resumption
+10. COMPLETE **Auto-Recovery** - Stale runner cleanup
 
 ---
 
-## 🎯 Remaining Work (8% to 100%)
+## Remaining Work (8% to 100%)
 
 ### High Priority
-- ⏳ Budget enforcement in launch (90% done)
-- ⏳ Integration test suite
-- ⏳ Load testing (1000+ runners)
-- ⏳ Production deployment guide
+- BLOCKED Budget enforcement in launch (90% done)
+- BLOCKED Integration test suite
+- BLOCKED Load testing (1000+ runners)
+- BLOCKED Production deployment guide
 
 ### Medium Priority
-- ⏳ S3 transcript uploads
-- ⏳ Advanced monitoring
-- ⏳ Performance profiling
-- ⏳ Security hardening
+- BLOCKED S3 transcript uploads
+- BLOCKED Advanced monitoring
+- BLOCKED Performance profiling
+- BLOCKED Security hardening
 
 ### Low Priority (Future)
-- ⏳ Vector embeddings (Qdrant)
-- ⏳ Web UI
-- ⏳ Remote runners
-- ⏳ Auto-scaling
+- BLOCKED Vector embeddings (Qdrant)
+- BLOCKED Web UI
+- BLOCKED Remote runners
+- BLOCKED Auto-scaling
 
 ---
 
-## 📝 Next Steps
+## Next Steps
 
 **Today (Feb 10, 2026):**
 1. Complete budget enforcement
@@ -221,19 +221,19 @@ Recent Additions (Phase 5):
 
 ---
 
-## 🏆 Milestones
+## Milestones
 
-- ✅ Feb 10 (Early): Phase 1 - Foundation (60%)
-- ✅ Feb 9: Phase 2 - Services (75%)
-- ✅ Feb 9: Phase 3 - Notifications & Budgets (82%)
-- ✅ Feb 9: Phase 4 - CLI Integration (90%)
-- ⏳ Feb 10: Phase 5 - Production Hardening (92% → 95%)
-- 🎯 Target: v1.0 Release (100%)
+- COMPLETE Feb 10 (Early): Phase 1 - Foundation (60%)
+- COMPLETE Feb 9: Phase 2 - Services (75%)
+- COMPLETE Feb 9: Phase 3 - Notifications & Budgets (82%)
+- COMPLETE Feb 9: Phase 4 - CLI Integration (90%)
+- BLOCKED Feb 10: Phase 5 - Production Hardening (92% → 95%)
+- Target: v1.0 Release (100%)
 
 ---
 
-**Current Focus:** Agent heartbeats + budget enforcement + testing  
-**Next Milestone:** 95% completion by end of day  
+**Current Focus:** Agent heartbeats + budget enforcement + testing 
+**Next Milestone:** 95% completion by end of day 
 **Target Release:** v1.0 Production (100%) - This week
 
 ---
@@ -242,13 +242,13 @@ Recent Additions (Phase 5):
 
 ### New Components Implemented
 
-1. **gRPC API Server** ✅
+1. **gRPC API Server** COMPLETE
    - Complete protobuf schema (`pkg/api/stratavore.proto`)
    - Full service definition with 15 RPC methods
    - Server implementation in daemon
    - Methods for runners, projects, sessions, heartbeats, status
 
-2. **Prometheus Metrics Server** ✅
+2. **Prometheus Metrics Server** COMPLETE
    - HTTP server on configurable port (default: 9091)
    - Metrics exposition in Prometheus text format
    - Tracked metrics:
@@ -260,7 +260,7 @@ Recent Additions (Phase 5):
      - `stratavore_heartbeat_latency_seconds`
    - Automatic periodic updates every 10 seconds
 
-3. **ntfy Notification Client** ✅
+3. **ntfy Notification Client** COMPLETE
    - Full notification integration
    - Pre-built notification types:
      - Runner started/stopped/failed
@@ -271,7 +271,7 @@ Recent Additions (Phase 5):
    - Priority levels (min, low, default, high, urgent)
    - Tags and action buttons support
 
-4. **Session Manager** ✅
+4. **Session Manager** COMPLETE
    - Complete session lifecycle management
    - Session creation and tracking
    - Message count and token tracking
@@ -279,74 +279,74 @@ Recent Additions (Phase 5):
    - Transcript storage (S3-ready)
    - Session statistics
 
-5. **Enhanced Database Layer** ✅
+5. **Enhanced Database Layer** COMPLETE
    - Added all session CRUD operations
    - Session resumption queries
    - Transcript metadata storage
    - Efficient indexing for lookups
 
-6. **Integrated Daemon** ✅
+6. **Integrated Daemon** COMPLETE
    - All components wired together
    - Metrics server running
    - Notification on startup/shutdown
    - gRPC server listening
    - Periodic metrics updates
 
-## 📊 Current Implementation Status
+## Current Implementation Status
 
 | Component | Status | Completion | Notes |
 |-----------|--------|------------|-------|
 | **Core Infrastructure** | | | |
-| Database Schema | ✅ Complete | 100% | Production-ready with outbox |
-| PostgreSQL Storage | ✅ Complete | 100% | All CRUD + sessions |
-| RabbitMQ Messaging | ✅ Complete | 100% | Publisher confirms |
-| Outbox Publisher | ✅ Complete | 100% | Reliable delivery |
+| Database Schema | COMPLETE Complete | 100% | Production-ready with outbox |
+| PostgreSQL Storage | COMPLETE Complete | 100% | All CRUD + sessions |
+| RabbitMQ Messaging | COMPLETE Complete | 100% | Publisher confirms |
+| Outbox Publisher | COMPLETE Complete | 100% | Reliable delivery |
 | **Daemon Components** | | | |
-| Runner Manager | ✅ Complete | 100% | Full lifecycle |
-| Heartbeat Processing | ✅ Complete | 100% | TTL-based |
-| Reconciliation | ✅ Complete | 100% | Automatic cleanup |
-| gRPC Server | ✅ Complete | 95% | Needs protobuf generation |
-| Metrics Server | ✅ Complete | 100% | Prometheus ready |
-| Notifications | ✅ Complete | 100% | ntfy integration |
-| Session Manager | ✅ Complete | 95% | Needs S3 integration |
+| Runner Manager | COMPLETE Complete | 100% | Full lifecycle |
+| Heartbeat Processing | COMPLETE Complete | 100% | TTL-based |
+| Reconciliation | COMPLETE Complete | 100% | Automatic cleanup |
+| gRPC Server | COMPLETE Complete | 95% | Needs protobuf generation |
+| Metrics Server | COMPLETE Complete | 100% | Prometheus ready |
+| Notifications | COMPLETE Complete | 100% | ntfy integration |
+| Session Manager | COMPLETE Complete | 95% | Needs S3 integration |
 | **Applications** | | | |
-| stratavored | ✅ Complete | 100% | Fully integrated |
-| stratavore-agent | ✅ Complete | 100% | Process wrapper |
-| stratavore CLI | ⏳ Partial | 60% | Basic commands |
+| stratavored | COMPLETE Complete | 100% | Fully integrated |
+| stratavore-agent | COMPLETE Complete | 100% | Process wrapper |
+| stratavore CLI | BLOCKED Partial | 60% | Basic commands |
 | **User Experience** | | | |
-| TUI Dashboard | ⏳ TODO | 0% | Bubble Tea |
-| PTY Attach | ⏳ TODO | 0% | Terminal forwarding |
-| Interactive Picker | ⏳ TODO | 0% | Multi-runner selection |
+| TUI Dashboard | BLOCKED TODO | 0% | Bubble Tea |
+| PTY Attach | BLOCKED TODO | 0% | Terminal forwarding |
+| Interactive Picker | BLOCKED TODO | 0% | Multi-runner selection |
 | **Advanced Features** | | | |
-| Token Budgets | ⏳ Partial | 30% | Tables exist, no enforcement |
-| S3 Transcript Storage | ⏳ Partial | 20% | Metadata only |
-| Vector Embeddings | ⏳ TODO | 0% | Qdrant integration |
-| Remote Runners | ⏳ TODO | 0% | Multi-node |
-| Web UI | ⏳ TODO | 0% | Future |
+| Token Budgets | BLOCKED Partial | 30% | Tables exist, no enforcement |
+| S3 Transcript Storage | BLOCKED Partial | 20% | Metadata only |
+| Vector Embeddings | BLOCKED TODO | 0% | Qdrant integration |
+| Remote Runners | BLOCKED TODO | 0% | Multi-node |
+| Web UI | BLOCKED TODO | 0% | Future |
 
 ### Overall Completion: **75%** 
 
-- **Core infrastructure**: 100% ✅
-- **Daemon services**: 95% ✅
-- **CLI/UX**: 40% ⏳
-- **Advanced features**: 10% ⏳
+- **Core infrastructure**: 100% COMPLETE
+- **Daemon services**: 95% COMPLETE
+- **CLI/UX**: 40% BLOCKED
+- **Advanced features**: 10% BLOCKED
 
-## 📈 Code Statistics
+## Code Statistics
 
 ```
-Total Files:      35+
-Total Lines:      4,200+
-Go Code:          3,200+ lines
-SQL:              800+ lines
-Documentation:    6 comprehensive files (20,000+ words)
+Total Files: 35+
+Total Lines: 4,200+
+Go Code: 3,200+ lines
+SQL: 800+ lines
+Documentation: 6 comprehensive files (20,000+ words)
 ```
 
-## 🔥 What's Working Right Now
+## What's Working Right Now
 
 You can actually use Stratavore today for:
 
 1. **Launch runners** - Full lifecycle management
-2. **Monitor via Prometheus** - Real-time metrics at :9091/metrics
+2. **Monitor via Prometheus** - Real-time metrics at:9091/metrics
 3. **Get notifications** - ntfy alerts for all events
 4. **Track sessions** - Complete conversation history
 5. **Manage projects** - CRUD operations via database
@@ -354,7 +354,7 @@ You can actually use Stratavore today for:
 7. **Guaranteed events** - Transactional outbox ensures delivery
 8. **Zero message loss** - Even if RabbitMQ is down
 
-## 🎯 Next Priority Items
+## Next Priority Items
 
 ### Critical Path (Week 1)
 
@@ -403,7 +403,7 @@ You can actually use Stratavore today for:
    - Download for resume
    - Cleanup old transcripts
 
-## 🚀 Quick Test Commands
+## Quick Test Commands
 
 ```bash
 # Build everything
@@ -429,7 +429,7 @@ curl -s http://localhost:2586/stratavore-status/sse
 ./bin/stratavore projects
 ```
 
-## 🔧 Required Setup Steps
+## Required Setup Steps
 
 1. **Install protoc** (for gRPC code generation)
    ```bash
@@ -454,18 +454,18 @@ curl -s http://localhost:2586/stratavore-status/sse
    - Import generated pb package in grpc_server.go
    - Replace placeholder types with generated types
 
-## 📝 Documentation Status
+## Documentation Status
 
 | Document | Status | Length |
 |----------|--------|--------|
-| README.md | ✅ Complete | 3,500 words |
-| QUICKSTART.md | ✅ Complete | 2,800 words |
-| ARCHITECTURE.md | ✅ Complete | 8,500 words |
-| IMPLEMENTATION.md | ✅ Complete | 3,200 words |
-| DEPLOYMENT_GUIDE.md | ✅ Complete | 2,500 words |
-| PROGRESS.md | ✅ Current | 1,500 words |
+| README.md | COMPLETE Complete | 3,500 words |
+| QUICKSTART.md | COMPLETE Complete | 2,800 words |
+| ARCHITECTURE.md | COMPLETE Complete | 8,500 words |
+| IMPLEMENTATION.md | COMPLETE Complete | 3,200 words |
+| DEPLOYMENT_GUIDE.md | COMPLETE Complete | 2,500 words |
+| PROGRESS.md | COMPLETE Current | 1,500 words |
 
-## 🎓 Key Architectural Wins
+## Key Architectural Wins
 
 1. **Transactional Outbox** - Zero message loss guarantee
 2. **Advisory Locks** - Race-free quota enforcement
@@ -476,7 +476,7 @@ curl -s http://localhost:2586/stratavore-status/sse
 7. **Graceful Shutdown** - Clean daemon stop
 8. **Metrics First** - Built-in Prometheus
 
-## 🐛 Known Limitations
+## Known Limitations
 
 1. **No gRPC protobuf compilation** - Needs `make proto`
 2. **No actual S3 upload** - Metadata-only
@@ -485,19 +485,19 @@ curl -s http://localhost:2586/stratavore-status/sse
 5. **No PTY attach** - Can't reconnect to runners
 6. **CLI doesn't use gRPC yet** - Direct DB access only
 
-## 🔒 Security Status
+## Security Status
 
 All critical patterns implemented:
-- ✅ Transactional outbox
-- ✅ Advisory locks
-- ✅ Publisher confirms
-- ✅ Context timeouts
-- ✅ Audit logging
-- ✅ HMAC signature fields
-- ⏳ mTLS (configuration ready, not enforced)
-- ⏳ Agent tokens (table exists, not used)
+- COMPLETE Transactional outbox
+- COMPLETE Advisory locks
+- COMPLETE Publisher confirms
+- COMPLETE Context timeouts
+- COMPLETE Audit logging
+- COMPLETE HMAC signature fields
+- BLOCKED mTLS (configuration ready, not enforced)
+- BLOCKED Agent tokens (table exists, not used)
 
-## 🎯 Definition of Done for v1.0
+## Definition of Done for v1.0
 
 - [x] Database schema with outbox
 - [x] Runner lifecycle management
@@ -518,7 +518,7 @@ All critical patterns implemented:
 
 **Current v1.0 Progress: 60%**
 
-## 📞 Getting Help
+## Getting Help
 
 For development:
 1. Read ARCHITECTURE.md for design details

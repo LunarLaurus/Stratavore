@@ -15,10 +15,10 @@ This guide helps you set up Protocol Buffers (protobuf) for gRPC support in Stra
 - Better performance for high-throughput scenarios
 
 **Without Protobuf (HTTP API):**
-- ✅ Still fully functional
-- ✅ JSON-based REST API
-- ✅ Easy debugging
-- ✅ Works out of the box
+- COMPLETE Still fully functional
+- COMPLETE JSON-based REST API
+- COMPLETE Easy debugging
+- COMPLETE Works out of the box
 
 ---
 
@@ -145,12 +145,12 @@ After installation:
 ```bash
 # All three should work
 protoc --version
-protoc-gen-go --version  
+protoc-gen-go --version 
 protoc-gen-go-grpc --version
 
 # Build Stratavore
-make          # Linux/Mac
-.\build.ps1   # Windows
+make # Linux/Mac
+.\build.ps1 # Windows
 
 # You should see:
 # [OK] protoc found
@@ -167,8 +167,8 @@ When protobuf tools are installed, building creates:
 
 ```
 pkg/api/generated/
-├── stratavore.pb.go         (protobuf types)
-└── stratavore_grpc.pb.go    (gRPC service)
+├── stratavore.pb.go (protobuf types)
+└── stratavore_grpc.pb.go (gRPC service)
 ```
 
 These files provide:
@@ -247,8 +247,8 @@ $env:PATH += ";$env:USERPROFILE\go\bin"
 **Fix - Clean and rebuild:**
 ```bash
 make clean
-make install-proto-tools  # Installs Go plugins
-make                      # Regenerates code
+make install-proto-tools # Installs Go plugins
+make # Regenerates code
 ```
 
 ---
@@ -302,7 +302,7 @@ protoc --go_out=pkg/api/generated \
 
 ```bash
 # Quick Install (Linux/Mac)
-brew install protobuf  # or download binary
+brew install protobuf # or download binary
 go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
 go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
 make
@@ -314,9 +314,9 @@ go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
 .\build.ps1
 
 # Or just build without protobuf - still works!
-make    # Will use HTTP API fallback
+make # Will use HTTP API fallback
 ```
 
 ---
 
-**Stratavore works either way. Choose what's best for you!** 🚀
+**Stratavore works either way. Choose what's best for you!** 

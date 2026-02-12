@@ -6,39 +6,39 @@ Stratavore is a comprehensive workspace orchestration system for AI-assisted dev
 
 ## Features
 
-- 🚀 **Multi-Runner Management** - Run multiple Claude Code sessions simultaneously across different projects
-- 🔄 **Session Resumption** - Resume work instantly from anywhere with full context preservation
-- 📊 **Global Visibility** - Always know what's running where with comprehensive dashboards
-- 💾 **State Persistence** - PostgreSQL + pgvector for reliable state and session tracking
-- 🔔 **Event-Driven** - RabbitMQ for real-time event distribution and coordination
-- 📈 **Observability** - Prometheus metrics, Grafana dashboards, structured logging
-- 🔒 **Resource Management** - Track tokens, manage quotas, prevent overruns
-- ⚡ **Transactional Outbox** - Guaranteed event delivery with no message loss
+- **Multi-Runner Management** - Run multiple Claude Code sessions simultaneously across different projects
+- IN PROGRESS **Session Resumption** - Resume work instantly from anywhere with full context preservation
+- **Global Visibility** - Always know what's running where with comprehensive dashboards
+- **State Persistence** - PostgreSQL + pgvector for reliable state and session tracking
+- **Event-Driven** - RabbitMQ for real-time event distribution and coordination
+- **Observability** - Prometheus metrics, Grafana dashboards, structured logging
+- **Resource Management** - Track tokens, manage quotas, prevent overruns
+- **Transactional Outbox** - Guaranteed event delivery with no message loss
 
 ## Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│                STRATAVORE CONTROL PLANE                 │
-│                     (stratavored)                       │
-│                                                         │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐ │
-│  │ State Manager│  │ Runner Mgr   │  │ Event Bus    │ │
-│  │ (PostgreSQL) │  │ (Lifecycle)  │  │ (RabbitMQ)   │ │
-│  └──────────────┘  └──────────────┘  └──────────────┘ │
+│ STRATAVORE CONTROL PLANE │
+│ (stratavored) │
+│ │
+│ ┌──────────────┐ ┌──────────────┐ ┌──────────────┐ │
+│ │ State Manager│ │ Runner Mgr │ │ Event Bus │ │
+│ │ (PostgreSQL) │ │ (Lifecycle) │ │ (RabbitMQ) │ │
+│ └──────────────┘ └──────────────┘ └──────────────┘ │
 └─────────────────────────────────────────────────────────┘
                          │
         ┌────────────────┼────────────────┐
-        │                │                │
-   ┌────▼────┐     ┌────▼────┐     ┌────▼────┐
-   │ Agent   │     │ Agent   │     │ Agent   │
-   │ Wrapper │     │ Wrapper │     │ Wrapper │
-   └────┬────┘     └────┬────┘     └────┬────┘
-        │                │                │
-   ┌────▼────┐     ┌────▼────┐     ┌────▼────┐
-   │ Claude  │     │ Claude  │     │ Claude  │
-   │ Code    │     │ Code    │     │ Code    │
-   └─────────┘     └─────────┘     └─────────┘
+        │ │ │
+   ┌────▼────┐ ┌────▼────┐ ┌────▼────┐
+   │ Agent │ │ Agent │ │ Agent │
+   │ Wrapper │ │ Wrapper │ │ Wrapper │
+   └────┬────┘ └────┬────┘ └────┬────┘
+        │ │ │
+   ┌────▼────┐ ┌────▼────┐ ┌────▼────┐
+   │ Claude │ │ Claude │ │ Claude │
+   │ Code │ │ Code │ │ Code │
+   └─────────┘ └─────────┘ └─────────┘
 ```
 
 ## Quick Start
@@ -179,24 +179,24 @@ Prometheus metrics are exposed on port 9091 (configurable):
 
 For comprehensive documentation, see the [docs/](docs/) directory:
 
-### 👥 [User Documentation](docs/user/)
+### [User Documentation](docs/user/)
 - [Quick Start Guide](docs/user/quick-start.md) - Get up and running in 5 minutes
 - [User Guide](docs/user/guide.md) - Complete user manual
 - [CLI Reference](docs/user/cli.md) - All commands and options
 - [FAQ](docs/user/faq.md) - Frequently asked questions
 
-### 🛠️ [Developer Documentation](docs/developer/)
+### [Developer Documentation](docs/developer/)
 - [Architecture](docs/developer/architecture.md) - System design and patterns
 - [Development Guide](docs/developer/development.md) - Setup and workflow
 - [Testing](docs/developer/testing.md) - Testing strategies
 - [Contributing](docs/developer/contributing.md) - How to contribute
 
-### 🚀 [Operations Documentation](docs/operations/)
+### [Operations Documentation](docs/operations/)
 - [Deployment Guide](docs/operations/deployment.md) - Production deployment
 - [Monitoring](docs/operations/) - Observability and troubleshooting
 - [Windows Support](docs/operations/windows.md) - Windows-specific instructions
 
-### 📡 [API Documentation](docs/api/)
+### [API Documentation](docs/api/)
 - [gRPC API](docs/api/grpc.md) - Complete API reference
 - [Protocol Buffers](docs/api/protobuf.md) - Schema documentation
 
