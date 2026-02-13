@@ -1,0 +1,3 @@
+[submodule "stratavore-ui"]
+	path = stratavore-ui
+	url = git@github.com:Meridian-Lex/stratavore-ui.git
