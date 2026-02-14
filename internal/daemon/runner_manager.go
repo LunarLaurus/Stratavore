@@ -17,13 +17,14 @@ import (
 	"go.uber.org/zap"
 )
 
-// RunnerManager manages Claude Code runner lifecycles
+// RunnerManager manages Meridian Lex runner lifecycles
 type RunnerManager struct {
 	db            *storage.PostgresClient
 	messaging     *messaging.Client
 	logger        *zap.Logger
 	activeRunners map[string]*ManagedRunner
 	mu            sync.RWMutex
+	httpAPIURL    string // base URL for agent-to-daemon heartbeats
 }
 
 // ManagedRunner represents an actively managed runner
@@ -34,17 +35,21 @@ type ManagedRunner struct {
 	StopCh     chan struct{}
 }
 
-// NewRunnerManager creates a new runner manager
+// NewRunnerManager creates a new runner manager.
+// httpPort is the port the HTTP API server listens on — passed to spawned agents
+// so their heartbeats reach the correct endpoint.
 func NewRunnerManager(
 	db *storage.PostgresClient,
 	messaging *messaging.Client,
 	logger *zap.Logger,
+	httpPort int,
 ) *RunnerManager {
 	return &RunnerManager{
 		db:            db,
 		messaging:     messaging,
 		logger:        logger,
 		activeRunners: make(map[string]*ManagedRunner),
+		httpAPIURL:    fmt.Sprintf("http://localhost:%d", httpPort),
 	}
 }
 
@@ -106,6 +111,7 @@ func (rm *RunnerManager) startAgent(
 		"--runner-id", runner.ID,
 		"--project-name", req.ProjectName,
 		"--project-path", req.ProjectPath,
+		"--api-url", rm.httpAPIURL,
 	}
 
 	// Add flags

@@ -20,21 +20,18 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// getAPIClient creates configured API client
+// getAPIClient creates configured API client.
+// The --grpc flag is reserved for a future native gRPC client; for now the
+// HTTP client is always used. Using --grpc with the gRPC port (50051) sends
+// HTTP/1.1 to an HTTP/2 endpoint and fails with a protocol error.
 func getAPIClient() *client.Client {
 	cfg, _ := config.LoadConfig()
 
-	if grpc {
-		// gRPC client
-		return client.NewClient("localhost", cfg.Daemon.Port_GRPC, 1)
-	} else {
-		// HTTP client
-		httpPort := cfg.Daemon.Port_HTTP
-		if httpPort == 0 {
-			httpPort = 50049 // fallback default
-		}
-		return client.NewClient("localhost", httpPort, 1)
+	httpPort := cfg.Daemon.Port_HTTP
+	if httpPort == 0 {
+		httpPort = 8080 // fallback default
 	}
+	return client.NewClient("localhost", httpPort, 1)
 }
 
 var (

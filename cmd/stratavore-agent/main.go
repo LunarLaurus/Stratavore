@@ -21,6 +21,7 @@ var (
 	runnerID    string
 	projectName string
 	projectPath string
+	apiURL      string
 	claudeFlags []string
 )
 
@@ -29,6 +30,7 @@ func main() {
 	flag.StringVar(&runnerID, "runner-id", "", "Runner ID")
 	flag.StringVar(&projectName, "project-name", "", "Project name")
 	flag.StringVar(&projectPath, "project-path", "", "Project path")
+	flag.StringVar(&apiURL, "api-url", "http://localhost:8080", "Stratavore daemon HTTP API base URL")
 	flag.Parse()
 	
 	if runnerID == "" || projectName == "" || projectPath == "" {
@@ -50,9 +52,9 @@ func main() {
 	defer cancel()
 	
 	// Start heartbeat goroutine
-	go sendHeartbeats(ctx, runnerID, logger)
+	go sendHeartbeats(ctx, runnerID, apiURL, logger)
 	
-	// Build Claude Code command
+	// Build Meridian Lex command
 	args := []string{"--project", projectPath}
 	
 	// Add custom flags
@@ -60,7 +62,8 @@ func main() {
 		args = append(args, f)
 	}
 	
-	// Start Claude Code
+	// Start Meridian Lex
+ // IDENTITY-EXCEPTION: functional internal reference — not for public exposure
 	cmd := exec.CommandContext(ctx, "claude", args...)
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
@@ -105,7 +108,7 @@ func main() {
 		logger.Info("received signal, terminating",
 			zap.String("signal", sig.String()))
 		
-		// Forward signal to Claude Code
+		// Forward signal to Meridian Lex
 		cmd.Process.Signal(sig)
 		
 		// Wait with timeout
@@ -119,12 +122,12 @@ func main() {
 	}
 }
 
-func sendHeartbeats(ctx context.Context, runnerID string, logger *zap.Logger) {
+func sendHeartbeats(ctx context.Context, runnerID string, baseURL string, logger *zap.Logger) {
 	ticker := time.NewTicker(10 * time.Second)
 	defer ticker.Stop()
 
 	client := &http.Client{Timeout: 5 * time.Second}
-	apiURL := "http://localhost:50051/api/v1/heartbeat"
+	heartbeatURL := baseURL + "/api/v1/heartbeat"
 	hostname, _ := os.Hostname()
 
 	// pid is not known yet at startup; we'll discover it lazily.
@@ -169,7 +172,7 @@ func sendHeartbeats(ctx context.Context, runnerID string, logger *zap.Logger) {
 				continue
 			}
 
-			resp, err := client.Post(apiURL, "application/json", bytes.NewReader(data))
+			resp, err := client.Post(heartbeatURL, "application/json", bytes.NewReader(data))
 			if err != nil {
 				logger.Debug("heartbeat failed (daemon may be restarting)", zap.Error(err))
 				continue
@@ -190,7 +193,7 @@ func sendHeartbeats(ctx context.Context, runnerID string, logger *zap.Logger) {
 				"hostname":      hostname,
 			}
 			data, _ := json.Marshal(finalHB)
-			client.Post(apiURL, "application/json", bytes.NewReader(data))
+			client.Post(heartbeatURL, "application/json", bytes.NewReader(data))
 			return
 		}
 	}
