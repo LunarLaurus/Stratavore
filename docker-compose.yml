@@ -137,9 +137,11 @@ services:
       STRATAVORE_DOCKER_PROMETHEUS_PORT: 9091
       STRATAVORE_DOCKER_QDRANT_HOST: qdrant
       STRATAVORE_DOCKER_QDRANT_PORT: 6333
-      # Optional: Telegram notifications
-      # STRATAVORE_DOCKER_TELEGRAM_TOKEN: ${TELEGRAM_BOT_TOKEN}
-      # STRATAVORE_DOCKER_TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID}
+      # Telegram notifications (set in .env file)
+      STRATAVORE_DOCKER_TELEGRAM_TOKEN: ${TELEGRAM_BOT_TOKEN}
+      STRATAVORE_DOCKER_TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID}
+      # GitHub fleet integration (set in .env file)
+      STRATAVORE_GITHUB_TOKEN: ${GITHUB_TOKEN}
     volumes:
       - ./configs/stratavore.yaml:/etc/stratavore/stratavore.yaml:ro
       - stratavore_data:/var/lib/stratavore

@@ -3,3 +3,5 @@
 # IDENTITY-EXCEPTION: functional internal reference — not for public exposure
 .claude/
 jobs/time_sessions.jsonl
+.env
+.env.local
