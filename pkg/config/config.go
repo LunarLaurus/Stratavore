@@ -228,6 +228,7 @@ func setDefaults(v *viper.Viper) {
 
 	// Daemon defaults
 	v.SetDefault("daemon.grpc_port", 50051)
+	v.SetDefault("daemon.http_port", 8080)
 	v.SetDefault("daemon.heartbeat_interval_seconds", 10)
 	v.SetDefault("daemon.reconcile_interval_seconds", 30)
 	v.SetDefault("daemon.outbox_poll_interval_seconds", 2)
