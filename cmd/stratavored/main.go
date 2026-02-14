@@ -124,7 +124,7 @@ func run() error {
 	}
 
 	// Create runner manager
-	runnerMgr := daemon.NewRunnerManager(db, mqClient, logger)
+	runnerMgr := daemon.NewRunnerManager(db, mqClient, logger, cfg.Daemon.Port_HTTP)
 
 	// Create API handler
 	apiHandler := daemon.NewGRPCServer(runnerMgr, db, logger, cfg.Daemon.Port_GRPC)
