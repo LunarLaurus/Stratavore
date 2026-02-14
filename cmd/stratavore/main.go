@@ -49,7 +49,7 @@ var (
 func init() {
 	// Global flags
 	rootCmd.PersistentFlags().StringVar(&configFile, "config", "", "config file path")
-	rootCmd.PersistentFlags().StringVar(&flagsVar, "flags", "", "Claude Code flags")
+	rootCmd.PersistentFlags().StringVar(&flagsVar, "flags", "", "Meridian Lex flags")
 	rootCmd.PersistentFlags().BoolVar(&godMode, "god", false, "God mode (full access)")
 	rootCmd.PersistentFlags().StringVar(&preset, "preset", "", "Use preset configuration")
 	rootCmd.PersistentFlags().BoolVar(&grpc, "grpc", false, "Use gRPC client (default false)")
@@ -58,7 +58,7 @@ func init() {
 	newCmd.Flags().StringP("path", "p", "", "Project path (default: current directory)")
 	newCmd.Flags().StringP("description", "d", "", "Project description")
 
-	launchCmd.Flags().StringSliceP("flag", "f", nil, "Claude Code flags")
+	launchCmd.Flags().StringSliceP("flag", "f", nil, "Meridian Lex flags")
 	launchCmd.Flags().StringSliceP("capability", "c", nil, "Capabilities to enable")
 
 	killCmd.Flags().BoolP("force", "f", false, "Force kill (SIGKILL)")
@@ -73,6 +73,7 @@ func init() {
 	rootCmd.AddCommand(watchCmd)
 	rootCmd.AddCommand(attachCmd)
 	rootCmd.AddCommand(daemonCmd)
+	rootCmd.AddCommand(fleetCmd)
 	rootCmd.AddCommand(completionCmd)
 }
 
@@ -86,7 +87,7 @@ func main() {
 var rootCmd = &cobra.Command{
 	Use:   "stratavore [project]",
 	Short: "AI Development Workspace Orchestrator",
-	Long: `Stratavore manages multiple Claude Code sessions across projects,
+	Long: `Stratavore manages multiple Meridian Lex sessions across projects,
 providing global state visibility, session resumption, and resource management.`,
 	Version: fmt.Sprintf("%s (built %s, commit %s)", Version, BuildTime, Commit),
 	Run:     rootHandler,
