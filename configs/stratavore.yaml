@@ -67,7 +67,10 @@ docker:
 daemon:
   # gRPC server port for CLI/agent communication
   grpc_port: 50051
-  
+
+  # HTTP API server port (REST endpoints, health check, fleet PRs)
+  http_port: 8080
+
   # Heartbeat interval (seconds)
   heartbeat_interval_seconds: 10
   
