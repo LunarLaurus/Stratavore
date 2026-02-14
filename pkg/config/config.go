@@ -155,6 +155,10 @@ func LoadConfig() (*Config, error) {
 	v.SetEnvPrefix("STRATAVORE")
 	v.AutomaticEnv()
 
+	// Explicit env bindings for nested keys (AutomaticEnv alone doesn't reliably
+	// override config file values during Unmarshal for nested structs).
+	bindEnvs(v)
+
 	// Set defaults
 	setDefaults(v)
 
@@ -250,6 +254,37 @@ func setDefaults(v *viper.Viper) {
 		"Meridian-Lex/Lex-webui",
 		"Meridian-Lex/lex-state",
 	})
+}
+
+// bindEnvs explicitly binds environment variables for nested config keys.
+// AutomaticEnv alone does not reliably override config file values for nested
+// structs during Unmarshal — BindEnv is required for each overridable key.
+func bindEnvs(v *viper.Viper) {
+	bindings := map[string]string{
+		"database.postgresql.host":     "STRATAVORE_DATABASE_POSTGRESQL_HOST",
+		"database.postgresql.port":     "STRATAVORE_DATABASE_POSTGRESQL_PORT",
+		"database.postgresql.user":     "STRATAVORE_DATABASE_POSTGRESQL_USER",
+		"database.postgresql.password": "STRATAVORE_DATABASE_POSTGRESQL_PASSWORD",
+		"database.postgresql.database": "STRATAVORE_DATABASE_POSTGRESQL_DATABASE",
+		"database.postgresql.sslmode":  "STRATAVORE_DATABASE_POSTGRESQL_SSLMODE",
+		"docker.rabbitmq.host":         "STRATAVORE_DOCKER_RABBITMQ_HOST",
+		"docker.rabbitmq.port":         "STRATAVORE_DOCKER_RABBITMQ_PORT",
+		"docker.rabbitmq.user":         "STRATAVORE_DOCKER_RABBITMQ_USER",
+		"docker.rabbitmq.password":     "STRATAVORE_DOCKER_RABBITMQ_PASSWORD",
+		"docker.qdrant.host":           "STRATAVORE_DOCKER_QDRANT_HOST",
+		"docker.qdrant.port":           "STRATAVORE_DOCKER_QDRANT_PORT",
+		"docker.prometheus.enabled":    "STRATAVORE_DOCKER_PROMETHEUS_ENABLED",
+		"docker.prometheus.port":       "STRATAVORE_DOCKER_PROMETHEUS_PORT",
+		"docker.telegram.token":        "STRATAVORE_DOCKER_TELEGRAM_TOKEN",
+		"docker.telegram.chat_id":      "STRATAVORE_DOCKER_TELEGRAM_CHAT_ID",
+		"github.token":                 "STRATAVORE_GITHUB_TOKEN",
+		"daemon.grpc_port":             "STRATAVORE_DAEMON_GRPC_PORT",
+		"daemon.http_port":             "STRATAVORE_DAEMON_HTTP_PORT",
+		"security.auth_secret":         "STRATAVORE_SECURITY_AUTH_SECRET",
+	}
+	for key, env := range bindings {
+		_ = v.BindEnv(key, env)
+	}
 }
 
 // GetConnectionString returns PostgreSQL connection string
