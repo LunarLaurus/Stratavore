@@ -84,134 +84,134 @@ type GetSessionRequest struct {
 // ===== RESPONSE TYPES =====
 
 type LaunchRunnerResponse struct {
-	Runner *Runner
-	Error  string
+	Runner *Runner `json:"runner"`
+	Error  string  `json:"error,omitempty"`
 }
 
 type StopRunnerResponse struct {
-	Success bool
-	Error   string
+	Success bool   `json:"success"`
+	Error   string `json:"error,omitempty"`
 }
 
 type GetRunnerResponse struct {
-	Runner *Runner
-	Error  string
+	Runner *Runner `json:"runner"`
+	Error  string  `json:"error,omitempty"`
 }
 
 type ListRunnersResponse struct {
-	Runners []*Runner
-	Total   int32
-	Error   string
+	Runners []*Runner `json:"runners"`
+	Total   int32     `json:"total"`
+	Error   string    `json:"error,omitempty"`
 }
 
 type CreateProjectResponse struct {
-	Project *Project
-	Error   string
+	Project *Project `json:"project"`
+	Error   string   `json:"error,omitempty"`
 }
 
 type GetProjectResponse struct {
-	Project *Project
-	Error   string
+	Project *Project `json:"project"`
+	Error   string   `json:"error,omitempty"`
 }
 
 type ListProjectsResponse struct {
-	Projects []*Project
-	Error    string
+	Projects []*Project `json:"projects"`
+	Error    string     `json:"error,omitempty"`
 }
 
 type HeartbeatResponse struct {
-	Success bool
-	Command string
-	Error   string
+	Success bool   `json:"success"`
+	Command string `json:"command,omitempty"`
+	Error   string `json:"error,omitempty"`
 }
 
 type GetStatusResponse struct {
-	Daemon  *DaemonStatus
-	Metrics *GlobalMetrics
-	Error   string
+	Daemon  *DaemonStatus  `json:"daemon"`
+	Metrics *GlobalMetrics `json:"metrics"`
+	Error   string         `json:"error,omitempty"`
 }
 
 type TriggerReconciliationResponse struct {
-	ReconciledCount  int32
-	FailedRunnerIDs  []string
-	Error            string
+	ReconciledCount int32    `json:"reconciledCount"`
+	FailedRunnerIDs []string `json:"failedRunnerIds,omitempty"`
+	Error           string   `json:"error,omitempty"`
 }
 
 type DeleteProjectResponse struct {
-	Success bool
-	Error   string
+	Success bool   `json:"success"`
+	Error   string `json:"error,omitempty"`
 }
 
 type ListSessionsResponse struct {
-	Sessions []*types.Session
-	Error    string
+	Sessions []*types.Session `json:"sessions"`
+	Error    string           `json:"error,omitempty"`
 }
 
 type GetSessionResponse struct {
-	Session *types.Session
-	Error   string
+	Session *types.Session `json:"session"`
+	Error   string         `json:"error,omitempty"`
 }
 
 // ===== MODEL TYPES =====
 
 type Runner struct {
-	ID                 string
-	RuntimeType        string
-	RuntimeID          string
-	NodeID             string
-	ProjectName        string
-	ProjectPath        string
-	Status             string
-	Flags              []string
-	Capabilities       []string
-	Environment        map[string]string
-	SessionID          string
-	ConversationMode   string
-	TokensUsed         int64
-	CPUPercent         float64
-	MemoryMB           int64
-	RestartAttempts    int32
-	MaxRestartAttempts int32
-	StartedAt          string
-	LastHeartbeat      string
-	HeartbeatTTL       int32
-	TerminatedAt       string
-	ExitCode           int32
-	CreatedAt          string
-	UpdatedAt          string
+	ID                 string            `json:"id"`
+	RuntimeType        string            `json:"runtimeType"`
+	RuntimeID          string            `json:"runtimeId"`
+	NodeID             string            `json:"nodeId"`
+	ProjectName        string            `json:"projectName"`
+	ProjectPath        string            `json:"projectPath"`
+	Status             string            `json:"status"`
+	Flags              []string          `json:"flags"`
+	Capabilities       []string          `json:"capabilities"`
+	Environment        map[string]string `json:"environment"`
+	SessionID          string            `json:"sessionId"`
+	ConversationMode   string            `json:"conversationMode"`
+	TokensUsed         int64             `json:"tokensUsed"`
+	CPUPercent         float64           `json:"cpuPercent"`
+	MemoryMB           int64             `json:"memoryMb"`
+	RestartAttempts    int32             `json:"restartAttempts"`
+	MaxRestartAttempts int32             `json:"maxRestartAttempts"`
+	StartedAt          string            `json:"startedAt"`
+	LastHeartbeat      string            `json:"lastHeartbeat"`
+	HeartbeatTTL       int32             `json:"heartbeatTtl"`
+	TerminatedAt       string            `json:"terminatedAt,omitempty"`
+	ExitCode           int32             `json:"exitCode"`
+	CreatedAt          string            `json:"createdAt"`
+	UpdatedAt          string            `json:"updatedAt"`
 }
 
 type Project struct {
-	Name           string
-	Path           string
-	Status         string
-	Description    string
-	Tags           []string
-	TotalRunners   int32
-	ActiveRunners  int32
-	TotalSessions  int32
-	TotalTokens    int64
-	CreatedAt      string
-	LastAccessedAt string
-	ArchivedAt     string
-	UpdatedAt      string
+	Name           string   `json:"name"`
+	Path           string   `json:"path"`
+	Status         string   `json:"status"`
+	Description    string   `json:"description"`
+	Tags           []string `json:"tags"`
+	TotalRunners   int32    `json:"totalRunners"`
+	ActiveRunners  int32    `json:"activeRunners"`
+	TotalSessions  int32    `json:"totalSessions"`
+	TotalTokens    int64    `json:"totalTokens"`
+	CreatedAt      string   `json:"createdAt"`
+	LastAccessedAt string   `json:"lastAccessedAt"`
+	ArchivedAt     string   `json:"archivedAt,omitempty"`
+	UpdatedAt      string   `json:"updatedAt"`
 }
 
 type DaemonStatus struct {
-	DaemonID      string
-	Hostname      string
-	Version       string
-	StartedAt     string
-	LastHeartbeat string
-	Healthy       bool
+	DaemonID      string `json:"daemonId"`
+	Hostname      string `json:"hostname"`
+	Version       string `json:"version"`
+	StartedAt     string `json:"startedAt"`
+	LastHeartbeat string `json:"lastHeartbeat"`
+	Healthy       bool   `json:"healthy"`
 }
 
 type GlobalMetrics struct {
-	ActiveRunners  int32
-	ActiveProjects int32
-	TotalSessions  int32
-	TokensUsed     int64
-	TokenLimit     int64
+	ActiveRunners  int32 `json:"activeRunners"`
+	ActiveProjects int32 `json:"activeProjects"`
+	TotalSessions  int32 `json:"totalSessions"`
+	TokensUsed     int64 `json:"tokensUsed"`
+	TokenLimit     int64 `json:"tokenLimit"`
 }
 
 // ===== CONVERSION HELPERS =====
