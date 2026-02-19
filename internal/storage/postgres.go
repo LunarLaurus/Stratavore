@@ -879,3 +879,397 @@ func (c *PostgresClient) GetExpiredBudgets(ctx context.Context, now time.Time) (
 
 	return budgets, rows.Err()
 }
+
+// ===== MODEL REGISTRY =====
+
+// ListModels returns all enabled models from the registry.
+func (c *PostgresClient) ListModels(ctx context.Context) ([]*types.ModelRegistry, error) {
+	rows, err := c.pool.Query(ctx, `
+		SELECT id, name, display_name, backend, tier,
+		       cost_per_million_input, cost_per_million_output,
+		       context_window, max_output_tokens, backend_config, enabled, created_at
+		FROM model_registry
+		WHERE enabled = true
+		ORDER BY tier, name
+	`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var models []*types.ModelRegistry
+	for rows.Next() {
+		m, err := scanModel(rows)
+		if err != nil {
+			return nil, err
+		}
+		models = append(models, m)
+	}
+	return models, rows.Err()
+}
+
+// GetModel returns a model by name.
+func (c *PostgresClient) GetModel(ctx context.Context, name string) (*types.ModelRegistry, error) {
+	row := c.pool.QueryRow(ctx, `
+		SELECT id, name, display_name, backend, tier,
+		       cost_per_million_input, cost_per_million_output,
+		       context_window, max_output_tokens, backend_config, enabled, created_at
+		FROM model_registry
+		WHERE name = $1
+	`, name)
+	return scanModel(row)
+}
+
+// UpdateModelEnabled sets the enabled flag on a model.
+func (c *PostgresClient) UpdateModelEnabled(ctx context.Context, name string, enabled bool) error {
+	_, err := c.pool.Exec(ctx, `
+		UPDATE model_registry SET enabled = $1 WHERE name = $2
+	`, enabled, name)
+	return err
+}
+
+// UpdateModelConfig updates the backend_config JSONB field for a model.
+func (c *PostgresClient) UpdateModelConfig(ctx context.Context, name string, config map[string]interface{}) error {
+	cfgJSON, err := json.Marshal(config)
+	if err != nil {
+		return fmt.Errorf("marshal config: %w", err)
+	}
+	_, err = c.pool.Exec(ctx, `
+		UPDATE model_registry SET backend_config = $1 WHERE name = $2
+	`, cfgJSON, name)
+	return err
+}
+
+type rowScanner interface {
+	Scan(dest ...interface{}) error
+}
+
+func scanModel(row rowScanner) (*types.ModelRegistry, error) {
+	var m types.ModelRegistry
+	var costIn, costOut sql.NullFloat64
+	var contextWin, maxOut sql.NullInt32
+	var cfgJSON []byte
+
+	err := row.Scan(
+		&m.ID, &m.Name, &m.DisplayName, &m.Backend, &m.Tier,
+		&costIn, &costOut, &contextWin, &maxOut,
+		&cfgJSON, &m.Enabled, &m.CreatedAt,
+	)
+	if err != nil {
+		return nil, err
+	}
+	if costIn.Valid {
+		m.CostPerMillionInput = costIn.Float64
+	}
+	if costOut.Valid {
+		m.CostPerMillionOutput = costOut.Float64
+	}
+	if contextWin.Valid {
+		m.ContextWindow = int(contextWin.Int32)
+	}
+	if maxOut.Valid {
+		m.MaxOutputTokens = int(maxOut.Int32)
+	}
+	if len(cfgJSON) > 0 {
+		json.Unmarshal(cfgJSON, &m.BackendConfig)
+	}
+	return &m, nil
+}
+
+// ===== SPRINTS =====
+
+// CreateSprint creates a new sprint and returns its UUID.
+func (c *PostgresClient) CreateSprint(ctx context.Context, sprint *types.Sprint) error {
+	tagsJSON, _ := json.Marshal(sprint.Tags)
+	id := uuid.New().String()
+
+	_, err := c.pool.Exec(ctx, `
+		INSERT INTO sprints (id, name, description, project_name, status, created_by, tags)
+		VALUES ($1, $2, $3, NULLIF($4,''), $5, $6, $7::jsonb)
+	`, id, sprint.Name, sprint.Description, sprint.ProjectName,
+		string(SprintStatusPending), sprint.CreatedBy, tagsJSON)
+	if err != nil {
+		return err
+	}
+	sprint.ID = id
+	return nil
+}
+
+// GetSprint retrieves a sprint by ID, optionally loading tasks.
+func (c *PostgresClient) GetSprint(ctx context.Context, id string, includeTasks bool) (*types.Sprint, error) {
+	var s types.Sprint
+	var desc, projectName sql.NullString
+	var startedAt, completedAt sql.NullTime
+	var tagsJSON []byte
+
+	err := c.pool.QueryRow(ctx, `
+		SELECT id, name, description, project_name, status, created_by, tags,
+		       created_at, started_at, completed_at, updated_at
+		FROM sprints WHERE id = $1
+	`, id).Scan(
+		&s.ID, &s.Name, &desc, &projectName, &s.Status, &s.CreatedBy,
+		&tagsJSON, &s.CreatedAt, &startedAt, &completedAt, &s.UpdatedAt,
+	)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return nil, fmt.Errorf("sprint not found: %s", id)
+		}
+		return nil, err
+	}
+
+	if desc.Valid {
+		s.Description = desc.String
+	}
+	if projectName.Valid {
+		s.ProjectName = projectName.String
+	}
+	if startedAt.Valid {
+		s.StartedAt = &startedAt.Time
+	}
+	if completedAt.Valid {
+		s.CompletedAt = &completedAt.Time
+	}
+	json.Unmarshal(tagsJSON, &s.Tags)
+
+	if includeTasks {
+		tasks, err := c.ListSprintTasks(ctx, id)
+		if err != nil {
+			return nil, err
+		}
+		s.Tasks = tasks
+	}
+
+	return &s, nil
+}
+
+// ListSprints returns sprints filtered by optional project name and status.
+func (c *PostgresClient) ListSprints(ctx context.Context, projectName, status string) ([]*types.Sprint, error) {
+	query := `
+		SELECT id, name, description, project_name, status, created_by, tags,
+		       created_at, started_at, completed_at, updated_at
+		FROM sprints
+		WHERE ($1 = '' OR project_name = $1)
+		  AND ($2 = '' OR status = $2)
+		ORDER BY created_at DESC
+		LIMIT 100
+	`
+	rows, err := c.pool.Query(ctx, query, projectName, status)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var sprints []*types.Sprint
+	for rows.Next() {
+		var s types.Sprint
+		var desc, proj sql.NullString
+		var startedAt, completedAt sql.NullTime
+		var tagsJSON []byte
+
+		err := rows.Scan(
+			&s.ID, &s.Name, &desc, &proj, &s.Status, &s.CreatedBy,
+			&tagsJSON, &s.CreatedAt, &startedAt, &completedAt, &s.UpdatedAt,
+		)
+		if err != nil {
+			return nil, err
+		}
+		if desc.Valid {
+			s.Description = desc.String
+		}
+		if proj.Valid {
+			s.ProjectName = proj.String
+		}
+		if startedAt.Valid {
+			s.StartedAt = &startedAt.Time
+		}
+		if completedAt.Valid {
+			s.CompletedAt = &completedAt.Time
+		}
+		json.Unmarshal(tagsJSON, &s.Tags)
+		sprints = append(sprints, &s)
+	}
+	return sprints, rows.Err()
+}
+
+// UpdateSprintStatus sets the status (and optional timestamps) on a sprint.
+func (c *PostgresClient) UpdateSprintStatus(ctx context.Context, id string, status types.SprintStatus) error {
+	var startClause string
+	if status == types.SprintRunning {
+		startClause = ", started_at = NOW()"
+	}
+	var endClause string
+	if status == types.SprintCompleted || status == types.SprintFailed || status == types.SprintCancelled {
+		endClause = ", completed_at = NOW()"
+	}
+
+	_, err := c.pool.Exec(ctx, fmt.Sprintf(`
+		UPDATE sprints
+		SET status = $1, updated_at = NOW()%s%s
+		WHERE id = $2
+	`, startClause, endClause), string(status), id)
+	return err
+}
+
+// SprintStatusPending is the default sprint status string (unexported sentinel).
+const SprintStatusPending = "pending"
+
+// ===== SPRINT TASKS =====
+
+// AddSprintTask adds a task to an existing sprint.
+func (c *PostgresClient) AddSprintTask(ctx context.Context, task *types.SprintTask) error {
+	id := uuid.New().String()
+	depsJSON, _ := json.Marshal(task.DependsOn)
+	resultJSON, _ := json.Marshal(task.ResultData)
+
+	_, err := c.pool.Exec(ctx, `
+		INSERT INTO sprint_tasks (
+			id, sprint_id, sequence_number, depends_on, name, description,
+			model_name, system_prompt, user_prompt, max_tokens, temperature,
+			status, result_data
+		) VALUES ($1,$2,$3,$4::jsonb,$5,$6,$7,$8,$9,$10,$11,'pending',$12::jsonb)
+	`, id, task.SprintID, task.SequenceNumber, depsJSON,
+		task.Name, task.Description, task.ModelName,
+		task.SystemPrompt, task.UserPrompt, task.MaxTokens, task.Temperature,
+		resultJSON)
+	if err != nil {
+		return err
+	}
+	task.ID = id
+	return nil
+}
+
+// ListSprintTasks returns all tasks for a sprint ordered by sequence.
+func (c *PostgresClient) ListSprintTasks(ctx context.Context, sprintID string) ([]types.SprintTask, error) {
+	rows, err := c.pool.Query(ctx, `
+		SELECT id, sprint_id, sequence_number, depends_on, name, description,
+		       model_name, system_prompt, user_prompt, max_tokens, temperature,
+		       status, result_summary, result_data, tokens_input, tokens_output,
+		       cost_usd, started_at, completed_at, error_message, created_at, updated_at
+		FROM sprint_tasks
+		WHERE sprint_id = $1
+		ORDER BY sequence_number, created_at
+	`, sprintID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var tasks []types.SprintTask
+	for rows.Next() {
+		t, err := scanSprintTask(rows)
+		if err != nil {
+			return nil, err
+		}
+		tasks = append(tasks, t)
+	}
+	return tasks, rows.Err()
+}
+
+// UpdateTaskResult writes the result of a completed or failed task.
+func (c *PostgresClient) UpdateTaskResult(ctx context.Context, taskID string, status types.SprintTaskStatus,
+	summary string, resultData map[string]interface{}, tokensIn, tokensOut int64, costUSD float64, errMsg string) error {
+
+	resultJSON, _ := json.Marshal(resultData)
+	var endClause string
+	if status == types.TaskCompleted || status == types.TaskFailed {
+		endClause = ", completed_at = NOW()"
+	}
+
+	_, err := c.pool.Exec(ctx, fmt.Sprintf(`
+		UPDATE sprint_tasks
+		SET status = $1, result_summary = $2, result_data = $3::jsonb,
+		    tokens_input = $4, tokens_output = $5, cost_usd = $6,
+		    error_message = $7, updated_at = NOW()%s
+		WHERE id = $8
+	`, endClause),
+		string(status), summary, resultJSON,
+		tokensIn, tokensOut, costUSD, errMsg, taskID)
+	return err
+}
+
+// UpdateTaskStatus sets only the status (and started_at when transitioning to running).
+func (c *PostgresClient) UpdateTaskStatus(ctx context.Context, taskID string, status types.SprintTaskStatus) error {
+	startClause := ""
+	if status == types.TaskRunning {
+		startClause = ", started_at = NOW()"
+	}
+	_, err := c.pool.Exec(ctx, fmt.Sprintf(`
+		UPDATE sprint_tasks SET status = $1, updated_at = NOW()%s WHERE id = $2
+	`, startClause), string(status), taskID)
+	return err
+}
+
+func scanSprintTask(rows pgx.Rows) (types.SprintTask, error) {
+	var t types.SprintTask
+	var depsJSON, resultJSON []byte
+	var desc, systemPrompt, resultSummary, errMsg sql.NullString
+	var startedAt, completedAt sql.NullTime
+
+	err := rows.Scan(
+		&t.ID, &t.SprintID, &t.SequenceNumber, &depsJSON,
+		&t.Name, &desc, &t.ModelName, &systemPrompt, &t.UserPrompt,
+		&t.MaxTokens, &t.Temperature, &t.Status,
+		&resultSummary, &resultJSON, &t.TokensInput, &t.TokensOutput,
+		&t.CostUSD, &startedAt, &completedAt, &errMsg,
+		&t.CreatedAt, &t.UpdatedAt,
+	)
+	if err != nil {
+		return t, err
+	}
+	if desc.Valid {
+		t.Description = desc.String
+	}
+	if systemPrompt.Valid {
+		t.SystemPrompt = systemPrompt.String
+	}
+	if resultSummary.Valid {
+		t.ResultSummary = resultSummary.String
+	}
+	if errMsg.Valid {
+		t.ErrorMessage = errMsg.String
+	}
+	if startedAt.Valid {
+		t.StartedAt = &startedAt.Time
+	}
+	if completedAt.Valid {
+		t.CompletedAt = &completedAt.Time
+	}
+	json.Unmarshal(depsJSON, &t.DependsOn)
+	json.Unmarshal(resultJSON, &t.ResultData)
+	return t, nil
+}
+
+// ===== SPRINT EXECUTIONS =====
+
+// CreateSprintExecution starts a new execution audit record.
+func (c *PostgresClient) CreateSprintExecution(ctx context.Context, sprintID, executedBy string, tasksTotal int) (*types.SprintExecution, error) {
+	id := uuid.New().String()
+	_, err := c.pool.Exec(ctx, `
+		INSERT INTO sprint_executions (id, sprint_id, executed_by, status, tasks_total)
+		VALUES ($1, $2, $3, 'running', $4)
+	`, id, sprintID, executedBy, tasksTotal)
+	if err != nil {
+		return nil, err
+	}
+	return &types.SprintExecution{
+		ID:          id,
+		SprintID:    sprintID,
+		ExecutedBy:  executedBy,
+		Status:      "running",
+		TasksTotal:  tasksTotal,
+	}, nil
+}
+
+// CompleteSprintExecution finalizes an execution record.
+func (c *PostgresClient) CompleteSprintExecution(ctx context.Context, execID, status string,
+	completed, failed int, tokensIn, tokensOut int64, costUSD float64, durationMs int64) error {
+
+	_, err := c.pool.Exec(ctx, `
+		UPDATE sprint_executions
+		SET status = $1, tasks_completed = $2, tasks_failed = $3,
+		    total_tokens_input = $4, total_tokens_output = $5,
+		    total_cost_usd = $6, duration_ms = $7, completed_at = NOW()
+		WHERE id = $8
+	`, status, completed, failed, tokensIn, tokensOut, costUSD, durationMs, execID)
+	return err
+}

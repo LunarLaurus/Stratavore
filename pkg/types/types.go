@@ -40,7 +40,7 @@ const (
 	ModeResume   ConversationMode = "resume"
 )
 
-// Runner represents a Claude Code instance
+// Runner represents a Meridian Lex instance
 type Runner struct {
 	ID           string       `json:"id"`
 	RuntimeType  RuntimeType  `json:"runtime_type"`
@@ -222,4 +222,105 @@ type Metrics struct {
 	TotalSessions  int   `json:"total_sessions"`
 	TokensUsed     int64 `json:"tokens_used"`
 	TokenLimit     int64 `json:"token_limit"`
+}
+
+// ===== Sprint System Types =====
+
+// ModelRegistry represents a registered LLM backend and model.
+type ModelRegistry struct {
+	ID                   string   `json:"id"`
+	Name                 string   `json:"name"`
+	DisplayName          string   `json:"display_name"`
+	Backend              string   `json:"backend"`               // 'messages-api' | 'ollama' | 'openrouter' | 'opencode'
+	Tier                 string   `json:"tier"`                  // 'lex' | 'haiku45' | 'haiku3' | 'ollama' | 'custom'
+	CostPerMillionInput  float64  `json:"cost_per_million_input"`
+	CostPerMillionOutput float64  `json:"cost_per_million_output"`
+	ContextWindow        int      `json:"context_window"`
+	MaxOutputTokens      int      `json:"max_output_tokens"`
+	BackendConfig        map[string]interface{} `json:"backend_config"`
+	Enabled              bool     `json:"enabled"`
+	CreatedAt            time.Time `json:"created_at"`
+}
+
+// SprintStatus represents sprint lifecycle state.
+type SprintStatus string
+
+const (
+	SprintPending   SprintStatus = "pending"
+	SprintRunning   SprintStatus = "running"
+	SprintCompleted SprintStatus = "completed"
+	SprintFailed    SprintStatus = "failed"
+	SprintCancelled SprintStatus = "cancelled"
+)
+
+// Sprint is a top-level unit of work dispatched by Commander or autonomous Lex.
+type Sprint struct {
+	ID          string       `json:"id"`
+	Name        string       `json:"name"`
+	Description string       `json:"description,omitempty"`
+	ProjectName string       `json:"project_name,omitempty"`
+	Status      SprintStatus `json:"status"`
+	CreatedBy   string       `json:"created_by"`
+	Tags        []string     `json:"tags"`
+	CreatedAt   time.Time    `json:"created_at"`
+	StartedAt   *time.Time   `json:"started_at,omitempty"`
+	CompletedAt *time.Time   `json:"completed_at,omitempty"`
+	UpdatedAt   time.Time    `json:"updated_at"`
+
+	Tasks []SprintTask `json:"tasks,omitempty"`
+}
+
+// SprintTaskStatus represents sprint task lifecycle state.
+type SprintTaskStatus string
+
+const (
+	TaskPending   SprintTaskStatus = "pending"
+	TaskRunning   SprintTaskStatus = "running"
+	TaskCompleted SprintTaskStatus = "completed"
+	TaskFailed    SprintTaskStatus = "failed"
+	TaskSkipped   SprintTaskStatus = "skipped"
+)
+
+// SprintTask is an individual unit of work within a sprint.
+type SprintTask struct {
+	ID             string           `json:"id"`
+	SprintID       string           `json:"sprint_id"`
+	SequenceNumber int              `json:"sequence_number"`
+	DependsOn      []string         `json:"depends_on"`
+	Name           string           `json:"name"`
+	Description    string           `json:"description,omitempty"`
+	ModelName      string           `json:"model_name"`
+	SystemPrompt   string           `json:"system_prompt,omitempty"`
+	UserPrompt     string           `json:"user_prompt"`
+	MaxTokens      int              `json:"max_tokens"`
+	Temperature    float64          `json:"temperature"`
+	Status         SprintTaskStatus `json:"status"`
+	ResultSummary  string           `json:"result_summary,omitempty"`
+	ResultData     map[string]interface{} `json:"result_data,omitempty"`
+	TokensInput    int64            `json:"tokens_input"`
+	TokensOutput   int64            `json:"tokens_output"`
+	CostUSD        float64          `json:"cost_usd"`
+	StartedAt      *time.Time       `json:"started_at,omitempty"`
+	CompletedAt    *time.Time       `json:"completed_at,omitempty"`
+	ErrorMessage   string           `json:"error_message,omitempty"`
+	CreatedAt      time.Time        `json:"created_at"`
+	UpdatedAt      time.Time        `json:"updated_at"`
+}
+
+// SprintExecution is an audit log entry for a sprint run.
+type SprintExecution struct {
+	ID              string     `json:"id"`
+	SprintID        string     `json:"sprint_id"`
+	ExecutedBy      string     `json:"executed_by"`
+	Status          string     `json:"status"` // 'running' | 'completed' | 'failed'
+	TasksTotal      int        `json:"tasks_total"`
+	TasksCompleted  int        `json:"tasks_completed"`
+	TasksFailed     int        `json:"tasks_failed"`
+	TotalTokensIn   int64      `json:"total_tokens_input"`
+	TotalTokensOut  int64      `json:"total_tokens_output"`
+	TotalCostUSD    float64    `json:"total_cost_usd"`
+	DurationMs      int64      `json:"duration_ms,omitempty"`
+	Notes           string     `json:"notes,omitempty"`
+	StartedAt       time.Time  `json:"started_at"`
+	CompletedAt     *time.Time `json:"completed_at,omitempty"`
 }
