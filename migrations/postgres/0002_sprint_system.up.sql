@@ -6,7 +6,7 @@ CREATE TABLE model_registry (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name TEXT UNIQUE NOT NULL,
     display_name TEXT NOT NULL,
-backend TEXT NOT NULL, -- '' | 'ollama' | 'openrouter' | 'opencode'
+    backend TEXT NOT NULL,              -- 'messages-api' | 'ollama' | 'openrouter' | 'opencode'
     tier TEXT NOT NULL,                 -- 'lex' | 'haiku45' | 'haiku3' | 'ollama' | 'custom'
     cost_per_million_input DECIMAL(10,6),
     cost_per_million_output DECIMAL(10,6),
@@ -21,14 +21,14 @@ CREATE INDEX idx_model_registry_backend ON model_registry(backend);
 CREATE INDEX idx_model_registry_tier ON model_registry(tier);
 CREATE INDEX idx_model_registry_enabled ON model_registry(enabled) WHERE enabled = true;
 
--- Seed: models
-INSERT INTO model_registry (name, display_name, backend, tier, cost_per_million_input, cost_per_million_output, context_window, max_output_tokens, backend_config) VALUES
-('claude-opus-4-6', 'Opus 4.6', '', 'lex', 15.000000, 75.000000, 200000, 32000, '{"api_key_path": ".api_key"}'),
-('claude-sonnet-4-5-20250929', 'Sonnet 4.5', '', 'lex', 3.000000, 15.000000, 200000, 16000, '{"api_key_path": ".api_key"}'),
-('claude-haiku-4-5-20251001', 'Haiku 4.5', '', 'haiku45', 0.800000, 4.000000, 200000, 16000, '{"api_key_path": ".api_key"}'),
-('claude-3-haiku-20240307', 'Haiku 3', '', 'haiku3', 0.250000, 1.250000, 200000, 4096, '{"api_key_path": ".api_key"}'),
-('claude-3-5-sonnet-20241022', 'Sonnet 3.5', '', 'lex', 3.000000, 15.000000, 200000, 16000, '{"api_key_path": ".api_key"}'),
-('claude-3-opus-20240229', 'Opus 3', '', 'lex', 15.000000, 75.000000, 200000, 4096, '{"api_key_path": ".api_key"}');
+-- Seed: LLM API models (messages-api backend)
+INSERT INTO model_registry (name, display_name, backend, tier, cost_per_million_input, cost_per_million_output, context_window, max_output_tokens) VALUES
+    ('claude-opus-4-6',            'Opus 4.6',    'messages-api', 'lex',     15.000000,  75.000000, 200000, 32000),
+    ('claude-sonnet-4-5-20250929', 'Sonnet 4.5',  'messages-api', 'lex',      3.000000,  15.000000, 200000, 16000),
+    ('claude-haiku-4-5-20251001',  'Haiku 4.5',   'messages-api', 'haiku45',  0.800000,   4.000000, 200000, 16000),
+    ('claude-3-haiku-20240307',    'Haiku 3',      'messages-api', 'haiku3',   0.250000,   1.250000, 200000,  4096),
+    ('claude-3-5-sonnet-20241022', 'Sonnet 3.5',   'messages-api', 'lex',      3.000000,  15.000000, 200000, 16000),
+    ('claude-3-opus-20240229',     'Opus 3',       'messages-api', 'lex',     15.000000,  75.000000, 200000,  4096);
 
 -- Seed: Ollama models (8GB VRAM)
 INSERT INTO model_registry (name, display_name, backend, tier, backend_config) VALUES
