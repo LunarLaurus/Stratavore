@@ -5,3 +5,16 @@
 jobs/time_sessions.jsonl
 .env
 .env.local
+
+# Build artifacts
+/stratavore
+/stratavored
+/stratavore-agent
+
+# Git worktrees
+.worktrees/
+
+# Fleet operational files
+.haiku-fleet-checkpoint.jsonl
+# Binaries
+cmd/stratavore-migrate/stratavore-migrate
