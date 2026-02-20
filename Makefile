@@ -3,7 +3,7 @@
 # Override at build time: make VERSION=1.5.0 build
 # Bump everywhere at once: make bump-version V=1.5.0
 
-.PHONY: all build install clean test lint migration-up migration-down docker-setup proto bump-version help
+.PHONY: all build install clean test test-integration test-load lint migration-up migration-down docker-setup proto bump-version help
 
 BINARY_NAME=stratavore
 DAEMON_NAME=stratavored
@@ -83,10 +83,13 @@ clean:
 	@echo "Clean complete"
 
 test:
-	go test -v -race -coverprofile=coverage.out ./...
+	go test -short ./...
 
 test-integration:
-	go test -v -race -tags=integration ./test/integration/...
+	go test ./test/integration/... -v -timeout 60s
+
+test-load:
+	go test ./test/load/... -v -load-addr http://localhost:8080
 
 lint:
 	go vet ./...
@@ -165,8 +168,9 @@ help:
 	@echo "  quick                - Quick build without protobuf (development)"
 	@echo "  install              - Install binaries to /usr/local/bin"
 	@echo "  clean                - Remove build artifacts"
-	@echo "  test                 - Run unit tests"
-	@echo "  test-integration     - Run integration tests"
+	@echo "  test                 - Run unit tests (short, no live daemon required)"
+	@echo "  test-integration     - Run integration tests (requires live daemon on :8080)"
+	@echo "  test-load            - Run load tests (requires live daemon on :8080)"
 	@echo "  lint                 - Run linters"
 	@echo "  migration-up         - Apply database migrations"
 	@echo "  migration-down       - Rollback database migrations"

@@ -2,15 +2,15 @@
 //
 // Run a specific scenario:
 //
-//	go test ./test/load/... -run TestConcurrentLaunches -v -load-addr http://localhost:50049
+//	go test ./test/load/... -run TestConcurrentLaunches -v -load-addr http://localhost:8080
 //
 // Run all scenarios:
 //
-//	go test ./test/load/... -v -load-addr http://localhost:50049
+//	go test ./test/load/... -v -load-addr http://localhost:8080
 //
 // Environment / flags:
 //
-//	-load-addr      Base URL of the stratavored HTTP API (default http://localhost:50049)
+//	-load-addr      Base URL of the stratavored HTTP API (default http://localhost:8080)
 //	-load-runners   Target runner count for runner-count scenarios (default 100)
 //	-load-events    Target events/s for event throughput scenarios (default 1000)
 package load
@@ -32,7 +32,7 @@ import (
 // ─── Flags (registered once; parsed by TestMain or individual tests) ─────────
 
 var (
-	daemonAddr   = flag.String("load-addr", "http://localhost:50049", "Base URL of stratavored HTTP API")
+	daemonAddr   = flag.String("load-addr", "http://localhost:8080", "Base URL of stratavored HTTP API")
 	targetRunners = flag.Int("load-runners", 100, "Concurrent runner count for load tests")
 	targetEvents  = flag.Int("load-events", 1000, "Target events/s for throughput tests")
 )
@@ -127,9 +127,13 @@ func logStats(t *testing.T, label string, s Stats) {
 		label, s.MinMS, s.MeanMS, s.P50MS, s.P95MS, s.P99MS, s.MaxMS)
 }
 
-// checkDaemon pings /api/v1/health and skips the test if the daemon is not up.
+// checkDaemon pings /api/v1/health and skips the test if the daemon is not up
+// or if running in short mode.
 func checkDaemon(t *testing.T) {
 	t.Helper()
+	if testing.Short() {
+		t.Skip("skipping load test in short mode")
+	}
 	resp, err := http.Get(baseURL() + "/api/v1/health")
 	if err != nil {
 		t.Skipf("stratavored not reachable at %s: %v", baseURL(), err)
