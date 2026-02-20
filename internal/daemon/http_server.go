@@ -9,6 +9,9 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/meridian-lex/stratavore/internal/auth"
+	"github.com/meridian-lex/stratavore/internal/backends"
+	"github.com/meridian-lex/stratavore/internal/dispatch"
+	"github.com/meridian-lex/stratavore/internal/sprint"
 	"github.com/meridian-lex/stratavore/pkg/api"
 	"github.com/meridian-lex/stratavore/pkg/config"
 	"github.com/meridian-lex/stratavore/pkg/types"
@@ -59,6 +62,7 @@ func NewHTTPServer(port int, handler *GRPCServer, logger *zap.Logger, cfg *confi
 	mux.HandleFunc("/api/v1/sprints/get", httpServer.handleGetSprint)
 	mux.HandleFunc("/api/v1/sprints/task/add", httpServer.handleAddSprintTask)
 	mux.HandleFunc("/api/v1/sprints/status", httpServer.handleUpdateSprintStatus)
+	mux.HandleFunc("/api/v1/sprints/execute", httpServer.handleExecuteSprint)
 	mux.HandleFunc("/api/v1/tasks/result", httpServer.handleUpdateTaskResult)
 	// Model registry
 	mux.HandleFunc("/api/v1/models", httpServer.handleListModels)
@@ -653,4 +657,48 @@ func (s *HTTPServer) handleUpdateModel(w http.ResponseWriter, r *http.Request) {
 	}
 
 	s.respondJSON(w, map[string]string{"status": "updated"})
+}
+
+func (s *HTTPServer) handleExecuteSprint(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req struct {
+		SprintID   string `json:"sprint_id"`
+		ExecutedBy string `json:"executed_by,omitempty"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if req.ExecutedBy == "" {
+		req.ExecutedBy = "lex"
+	}
+
+	// Initialize backends (in production, this would be wired via DI)
+	registry := backends.NewBackendRegistry()
+
+	messagesAPI, err := backends.NewMessagesAPIBackend()
+	if err == nil && messagesAPI != nil {
+		registry.Register(messagesAPI)
+	}
+
+	ollama := backends.NewOllamaBackend("http://localhost:11434")
+	registry.Register(ollama)
+
+	router := dispatch.NewTierRouter(s.handler.storage, registry, s.logger)
+	executor := sprint.NewSprintExecutor(s.handler.storage, router, s.logger)
+
+	exec, err := executor.ExecuteSprint(r.Context(), req.SprintID, req.ExecutedBy)
+	if err != nil {
+		s.logger.Error("sprint execution failed", zap.Error(err))
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(exec)
 }
