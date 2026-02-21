@@ -29,6 +29,7 @@ Provides commands to analyze, import, validate, and rollback V2 data migration.`
 	rootCmd.AddCommand(validateCmd)
 	rootCmd.AddCommand(rollbackCmd)
 	rootCmd.AddCommand(syncCmd)
+	rootCmd.AddCommand(schemaAuditCmd)
 
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
