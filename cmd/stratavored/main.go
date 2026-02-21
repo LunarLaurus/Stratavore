@@ -108,6 +108,20 @@ func run() error {
 		logger.Error("failed to declare queue", zap.Error(err))
 	}
 
+	// Start event consumer
+	logger.Info("starting event consumer")
+	go func() {
+		eventHandler := func(body []byte) error {
+			logger.Info("processing event", zap.ByteString("event", body))
+			// TODO: Implement event processing logic
+			return nil
+		}
+
+		if err := mqClient.Consume("stratavore.daemon.events", eventHandler); err != nil {
+			logger.Error("event consumer failed", zap.Error(err))
+		}
+	}()
+
 	// Initialize Telegram notifications
 	var notifier *notifications.Client
 	if cfg.Docker.Telegram.Token != "" && cfg.Docker.Telegram.ChatID != "" {
