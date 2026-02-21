@@ -6,17 +6,17 @@ jobs/time_sessions.jsonl
 .env
 .env.local
 
-# Build artifacts (root level)
+# Build artifacts (root level only)
 /stratavore
 /stratavored
 /stratavore-agent
 /stratavore-migrate
 
-# Build artifacts (anywhere in tree)
-**/stratavore
-**/stratavored
-**/stratavore-agent
-**/stratavore-migrate
+# Build artifacts (in cmd/ subdirectories - specific binary names)
+cmd/stratavore/stratavore
+cmd/stratavored/stratavored
+cmd/stratavore-agent/stratavore-agent
+cmd/stratavore-migrate/stratavore-migrate
 
 # Compiled binaries
 *.exe
