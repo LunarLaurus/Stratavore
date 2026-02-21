@@ -18,6 +18,10 @@ import (
 )
 
 var (
+	Version     = "1.4.0"
+	BuildTime   = "unknown"
+	Commit      = "unknown"
+
 	runnerID    string
 	projectName string
 	projectPath string
@@ -43,6 +47,7 @@ func main() {
 	defer logger.Sync()
 	
 	logger.Info("stratavore-agent starting",
+		zap.String("version", Version),
 		zap.String("runner_id", runnerID),
 		zap.String("project_name", projectName),
 		zap.String("project_path", projectPath))
@@ -162,7 +167,7 @@ func sendHeartbeats(ctx context.Context, runnerID string, baseURL string, logger
 				"memory_mb":     memoryMB,
 				"tokens_used":   0,
 				"session_id":    "",
-				"agent_version": "1.4.0",
+				"agent_version": Version,
 				"hostname":      hostname,
 			}
 
@@ -189,7 +194,7 @@ func sendHeartbeats(ctx context.Context, runnerID string, baseURL string, logger
 			finalHB := map[string]interface{}{
 				"runner_id":     runnerID,
 				"status":        "stopped",
-				"agent_version": "1.4.0",
+				"agent_version": Version,
 				"hostname":      hostname,
 			}
 			data, _ := json.Marshal(finalHB)

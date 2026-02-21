@@ -111,6 +111,16 @@ jobs:
           sed -i "s/Version   = \"[^\"]*\"/Version   = \"${{ steps.new_version.outputs.version }}\"/" cmd/stratavore/main.go
           echo "Updated cmd/stratavore/main.go"
 
+      - name: Update version in stratavore-agent
+        run: |
+          sed -i "s/Version     = \"[^\"]*\"/Version     = \"${{ steps.new_version.outputs.version }}\"/" cmd/stratavore-agent/main.go
+          echo "Updated cmd/stratavore-agent/main.go"
+
+      - name: Update version in stratavore-migrate
+        run: |
+          sed -i "s/Version   = \"[^\"]*\"/Version   = \"${{ steps.new_version.outputs.version }}\"/" cmd/stratavore-migrate/main.go
+          echo "Updated cmd/stratavore-migrate/main.go"
+
       - name: Verify version updates
         run: |
           echo "=== VERSION file ==="
@@ -121,10 +131,16 @@ jobs:
           echo ""
           echo "=== stratavore version ==="
           grep 'Version   =' cmd/stratavore/main.go
+          echo ""
+          echo "=== stratavore-agent version ==="
+          grep 'Version     =' cmd/stratavore-agent/main.go
+          echo ""
+          echo "=== stratavore-migrate version ==="
+          grep 'Version   =' cmd/stratavore-migrate/main.go
 
       - name: Commit version bump
         run: |
-          git add VERSION cmd/stratavored/main.go cmd/stratavore/main.go
+          git add VERSION cmd/stratavored/main.go cmd/stratavore/main.go cmd/stratavore-agent/main.go cmd/stratavore-migrate/main.go
           git commit -m "chore: bump version to ${{ steps.new_version.outputs.version }} [skip ci]"
           echo "Committed version bump"
 

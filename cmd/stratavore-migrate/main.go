@@ -8,6 +8,10 @@ import (
 )
 
 var (
+	Version   = "1.4.0"
+	BuildTime = "unknown"
+	Commit    = "unknown"
+
 	v2Dir string
 )
 
@@ -18,6 +22,7 @@ func main() {
 		Long: `Migration tool for importing Lex V2 state into Stratavore V3.
 
 Provides commands to analyze, import, validate, and rollback V2 data migration.`,
+		Version: fmt.Sprintf("%s (built %s, commit %s)", Version, BuildTime, Commit),
 	}
 
 	// Global flags
