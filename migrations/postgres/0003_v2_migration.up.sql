@@ -9,14 +9,17 @@ CREATE TABLE IF NOT EXISTS rank_tracking (
     progress TEXT NOT NULL,           -- e.g., "2/5" (progress toward next rank)
     strikes INTEGER NOT NULL DEFAULT 0,
     commendations INTEGER NOT NULL DEFAULT 0,
-    event_type TEXT NOT NULL          -- 'strike' | 'commendation' | 'promotion' | 'demotion' | 'initial'
-        CHECK (event_type IN ('strike', 'commendation', 'promotion', 'demotion', 'initial')),
+    event_type TEXT NOT NULL          -- 'strike' | 'commendation' | 'promotion' | 'demotion' | 'initial' | 'note'
+        CHECK (event_type IN ('strike', 'commendation', 'promotion', 'demotion', 'initial', 'note')),
     event_date TIMESTAMPTZ NOT NULL,
     description TEXT,
     evidence TEXT,                     -- File path, commit hash, or other reference
     metadata JSONB DEFAULT '{}',       -- Additional structured data
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+-- Unique constraint to prevent duplicate events during sync
+CREATE UNIQUE INDEX idx_rank_tracking_unique_event ON rank_tracking(event_type, event_date, COALESCE(description, ''));
 
 CREATE INDEX idx_rank_tracking_event_date ON rank_tracking(event_date DESC);
 CREATE INDEX idx_rank_tracking_event_type ON rank_tracking(event_type);
@@ -25,8 +28,8 @@ CREATE INDEX idx_rank_tracking_current_rank ON rank_tracking(current_rank);
 -- Behavioral directives: Machine-readable operational rules from V2
 CREATE TABLE IF NOT EXISTS directives (
     id TEXT PRIMARY KEY,               -- e.g., "IDENTITY-ENFORCEMENT", "GIT-SAFETY-001"
-    severity TEXT NOT NULL             -- 'PRIME' | 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW'
-        CHECK (severity IN ('PRIME', 'CRITICAL', 'HIGH', 'MEDIUM', 'LOW')),
+    severity TEXT NOT NULL             -- 'PRIME' | 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW' | 'STANDARD' | 'META'
+        CHECK (severity IN ('PRIME', 'CRITICAL', 'HIGH', 'MEDIUM', 'LOW', 'STANDARD', 'META')),
     trigger_condition TEXT NOT NULL,   -- When this directive applies
     action JSONB NOT NULL,             -- What to do (structured action specification)
     directive_text TEXT NOT NULL,      -- Human-readable directive
