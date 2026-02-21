@@ -1,0 +1,150 @@
+name: Version Bump
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - 'VERSION'
+      - '.github/workflows/version-bump.yml'
+
+jobs:
+  bump-version:
+    runs-on: ubuntu-latest
+    # Skip if commit message contains [skip ci] or is already a version bump
+    if: "!contains(github.event.head_commit.message, '[skip ci]') && !contains(github.event.head_commit.message, 'chore: bump version')"
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Get current version
+        id: current_version
+        run: |
+          # Read VERSION file (e.g., "1.4.0")
+          CURRENT_VERSION=$(cat VERSION)
+          echo "version=${CURRENT_VERSION}" >> $GITHUB_OUTPUT
+          echo "Current version: ${CURRENT_VERSION}"
+
+      - name: Determine bump type
+        id: bump_type
+        run: |
+          COMMIT_MSG="${{ github.event.head_commit.message }}"
+
+          # Parse first line of commit message for conventional commits
+          FIRST_LINE=$(echo "$COMMIT_MSG" | head -1)
+
+          # Check for BREAKING CHANGE in full message (indicates major bump)
+          if echo "$COMMIT_MSG" | grep -qiE "^BREAKING CHANGE:|breaking change:"; then
+            echo "type=major" >> $GITHUB_OUTPUT
+            echo "Bump type: MAJOR (breaking change detected)"
+          # Check for feat: or feature: (minor bump)
+          elif echo "$FIRST_LINE" | grep -qiE "^feat(\(.+\))?:|^feature:"; then
+            echo "type=minor" >> $GITHUB_OUTPUT
+            echo "Bump type: MINOR (feature)"
+          # Check for fix: or bugfix: (patch bump)
+          elif echo "$FIRST_LINE" | grep -qiE "^fix(\(.+\))?:|^bugfix:"; then
+            echo "type=patch" >> $GITHUB_OUTPUT
+            echo "Bump type: PATCH (bugfix)"
+          # Check for major: prefix
+          elif echo "$FIRST_LINE" | grep -qiE "^major:"; then
+            echo "type=major" >> $GITHUB_OUTPUT
+            echo "Bump type: MAJOR (explicit major prefix)"
+          # Default to patch for any other commit
+          else
+            echo "type=patch" >> $GITHUB_OUTPUT
+            echo "Bump type: PATCH (default)"
+          fi
+
+      - name: Bump version
+        id: new_version
+        run: |
+          CURRENT_VERSION="${{ steps.current_version.outputs.version }}"
+          BUMP_TYPE="${{ steps.bump_type.outputs.type }}"
+
+          # Parse current version (e.g., "1.4.0")
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT_VERSION"
+
+          # Calculate new version based on bump type
+          case "$BUMP_TYPE" in
+            major)
+              NEW_MAJOR=$((MAJOR + 1))
+              NEW_MINOR=0
+              NEW_PATCH=0
+              ;;
+            minor)
+              NEW_MAJOR=$MAJOR
+              NEW_MINOR=$((MINOR + 1))
+              NEW_PATCH=0
+              ;;
+            patch)
+              NEW_MAJOR=$MAJOR
+              NEW_MINOR=$MINOR
+              NEW_PATCH=$((PATCH + 1))
+              ;;
+          esac
+
+          NEW_VERSION="${NEW_MAJOR}.${NEW_MINOR}.${NEW_PATCH}"
+          echo "version=${NEW_VERSION}" >> $GITHUB_OUTPUT
+          echo "New version: ${NEW_VERSION}"
+
+      - name: Update VERSION file
+        run: |
+          echo "${{ steps.new_version.outputs.version }}" > VERSION
+          echo "VERSION file updated to ${{ steps.new_version.outputs.version }}"
+
+      - name: Update version in stratavored
+        run: |
+          sed -i "s/Version   = \"[^\"]*\"/Version   = \"${{ steps.new_version.outputs.version }}\"/" cmd/stratavored/main.go
+          echo "Updated cmd/stratavored/main.go"
+
+      - name: Update version in stratavore CLI
+        run: |
+          sed -i "s/Version   = \"[^\"]*\"/Version   = \"${{ steps.new_version.outputs.version }}\"/" cmd/stratavore/main.go
+          echo "Updated cmd/stratavore/main.go"
+
+      - name: Verify version updates
+        run: |
+          echo "=== VERSION file ==="
+          cat VERSION
+          echo ""
+          echo "=== stratavored version ==="
+          grep 'Version   =' cmd/stratavored/main.go
+          echo ""
+          echo "=== stratavore version ==="
+          grep 'Version   =' cmd/stratavore/main.go
+
+      - name: Commit version bump
+        run: |
+          git add VERSION cmd/stratavored/main.go cmd/stratavore/main.go
+          git commit -m "chore: bump version to ${{ steps.new_version.outputs.version }} [skip ci]"
+          echo "Committed version bump"
+
+      - name: Create git tag
+        run: |
+          git tag -a "v${{ steps.new_version.outputs.version }}" -m "Release v${{ steps.new_version.outputs.version }}"
+          echo "Created git tag v${{ steps.new_version.outputs.version }}"
+
+      - name: Push changes and tag
+        run: |
+          git push origin main
+          git push origin "v${{ steps.new_version.outputs.version }}"
+          echo "Pushed changes and tag to origin"
+
+      - name: Report version bump
+        run: |
+          echo "Version Bump Summary"
+          echo "===================="
+          echo "Previous: ${{ steps.current_version.outputs.version }}"
+          echo "Current:  ${{ steps.new_version.outputs.version }}"
+          echo "Type:     ${{ steps.bump_type.outputs.type }}"
+          echo "Commit:   ${{ github.event.head_commit.id }}"
+          echo "Message:  ${{ github.event.head_commit.message }}"
