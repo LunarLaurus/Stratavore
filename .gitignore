@@ -5,6 +5,7 @@
 jobs/time_sessions.jsonl
 .env
 .env.local
+SESSION-STATE.md
 
 # Build artifacts (root level only)
 /stratavore
